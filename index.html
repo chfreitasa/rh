@@ -3,76 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#004d40">
+    <meta name="theme-color" content="#183482">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Gestão de Férias - Regional Nordeste</title>
+    <title>Gestão de Férias - Regional Nordeste | Alupar</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
-            --primary: #004d40; --secondary: #00796b; --bg: #e0f2f1; --text: #333;
-            --error: #d32f2f; --success: #2e7d32; --warning: #f57c00;
-            --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+            /* PALETA OFICIAL ALUPAR */
+            --alupar-blue: #183482;
+            --alupar-blue-dark: #0f2359;
+            --alupar-blue-light: #e8eef7;
+            --alupar-green: #2ea843;
+            --alupar-green-dark: #217d31;
+            --alupar-green-light: #eaf7ec;
+            
+            --bg-page: #f0f4f9;
+            --text: #2c3e50;
+            --error: #d32f2f;
+            --warning: #f57c00;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
-            color: var(--text); margin: 0; padding: 20px 15px 40px; padding-top: calc(20px + var(--safe-top));
-            min-height: 100vh; display: flex; justify-content: center;
+            background: linear-gradient(180deg, #e4ebf5 0%, #f4f7fb 100%);
+            color: var(--text);
+            margin: 0;
+            padding: 0 0 40px 0;
+            min-height: 100vh;
         }
-        .app-container { max-width: 1200px; width: 100%; }
+
+        /* BARRA SUPERIOR INSTITUCIONAL ALUPAR */
+        .alupar-topbar {
+            background-color: var(--alupar-blue);
+            border-bottom: 4px solid var(--alupar-green);
+            padding: calc(14px + var(--safe-top)) 24px 14px;
+            box-shadow: 0 4px 15px rgba(24, 52, 130, 0.2);
+            margin-bottom: 28px;
+        }
+        .topbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        /* REPRODUÇÃO EM CSS DA LOGO ALUPAR */
+        .alupar-logo {
+            display: inline-flex;
+            align-items: baseline;
+            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+            font-weight: 800;
+            font-size: 2em;
+            color: #ffffff;
+            letter-spacing: -0.8px;
+            line-height: 1;
+            user-select: none;
+            padding-top: 6px;
+        }
+        .alupar-logo .upar-bar {
+            position: relative;
+            display: inline-block;
+        }
+        .alupar-logo .upar-bar::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 1px;
+            right: 0;
+            height: 5px;
+            background-color: var(--alupar-green);
+            border-radius: 1px;
+        }
+
+        .brand-divider {
+            width: 1px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .page-title {
+            color: #ffffff;
+            margin: 0;
+            font-size: 1.25em;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1.5px solid rgba(255, 255, 255, 0.4);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .btn-logout:hover { background: var(--error); border-color: var(--error); }
+        .btn-logout:active { transform: scale(0.96); }
+
+        .app-container { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 15px; }
         .page { display: none; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
         
         /* LOGIN */
-        .login-container { background: #fff; max-width: 400px; margin: 40px auto 0; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,77,64,0.15); width: 100%; }
-        .login-container h2 { text-align: center; color: var(--primary); margin-top: 0; margin-bottom: 30px; font-size: 1.6em; }
-        .login-logo { text-align: center; font-size: 3em; margin-bottom: 10px; display: block; }
-
-        /* CABEÇALHO */
-        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .page-title { color: var(--primary); margin: 0; font-size: 1.6em; }
-        .btn-logout { background: #fff; border: 2px solid var(--error); color: var(--error); padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: 0.2s; }
-        .btn-logout:active { background: var(--error); color: #fff; }
+        .login-wrapper { padding: 40px 15px; }
+        .login-container {
+            background: #fff;
+            max-width: 400px;
+            margin: 20px auto 0;
+            border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(24, 52, 130, 0.15);
+            width: 100%;
+            overflow: hidden;
+        }
+        .login-banner {
+            background: var(--alupar-blue);
+            border-bottom: 4px solid var(--alupar-green);
+            padding: 28px 20px;
+            text-align: center;
+        }
+        .login-banner p {
+            color: rgba(255,255,255,0.85);
+            margin: 10px 0 0;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .login-body { padding: 30px; }
+        .login-body h2 { text-align: center; color: var(--alupar-blue); margin-top: 0; margin-bottom: 22px; font-size: 1.35em; }
 
         /* FORMULÁRIOS GLOBAIS */
-        .container-box { background: #fff; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,77,64,0.15); margin-bottom: 30px; }
-        .form-title { margin-top: 0; margin-bottom: 18px; color: var(--primary); font-size: 1.2em; text-align: center; }
+        .container-box {
+            background: #fff;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 6px 24px rgba(24, 52, 130, 0.08);
+            border-top: 4px solid var(--alupar-blue);
+            margin-bottom: 28px;
+        }
+        .form-title { margin-top: 0; margin-bottom: 18px; color: var(--alupar-blue); font-size: 1.2em; text-align: center; font-weight: 700; }
         .form-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.92em; color: #555; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; color: #4a5568; }
         input[type="text"], input[type="password"], input[type="number"], input[type="date"], select {
-            flex: 1; height: 50px; margin: 0; padding: 0 12px; border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 1.02em; background-color: #fafafa; font-family: inherit; color: var(--text); width: 100%;
+            flex: 1; height: 48px; margin: 0; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 9px;
+            font-size: 1em; background-color: #f8fafc; font-family: inherit; color: var(--text); width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        input:focus, select:focus { outline: none; border-color: var(--secondary); background-color: #fff; }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--alupar-blue);
+            box-shadow: 0 0 0 3px rgba(24, 52, 130, 0.12);
+            background-color: #fff;
+        }
         button.main-btn {
-            display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 55px;
-            margin-top: 10px; background-color: var(--secondary); color: white; border: none; border-radius: 10px;
-            font-size: 1.15em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #004d40; transition: background-color 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 52px;
+            margin-top: 10px; background-color: var(--alupar-green); color: white; border: none; border-radius: 9px;
+            font-size: 1.1em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 var(--alupar-green-dark);
+            transition: background-color 0.2s, transform 0.1s;
         }
-        button.main-btn:active { transform: translateY(4px); box-shadow: none; background-color: var(--primary); }
-        button.main-btn:disabled { background-color: #999; box-shadow: none; cursor: not-allowed; }
-        button.main-btn.btn-edit-mode { background-color: var(--warning); box-shadow: 0 4px 0 #e65100; }
+        button.main-btn:hover { background-color: #28943b; }
+        button.main-btn:active { transform: translateY(4px); box-shadow: none; }
+        button.main-btn:disabled { background-color: #94a3b8; box-shadow: none; cursor: not-allowed; }
+        button.main-btn.btn-edit-mode { background-color: var(--warning); box-shadow: 0 4px 0 #c66900; }
         .btn-cancel {
             display: none; width: 100%; margin-top: 10px; padding: 12px; background-color: #fff;
-            color: var(--error); border: 2px solid var(--error); border-radius: 10px; font-size: 1em;
+            color: var(--error); border: 2px solid var(--error); border-radius: 9px; font-size: 1em;
             font-weight: bold; cursor: pointer;
         }
         .btn-cancel:active { background-color: var(--error); color: #fff; }
-        .error-msg { color: var(--error); font-size: 0.9em; text-align: center; margin-top: 10px; min-height: 20px; }
+        .error-msg { color: var(--error); font-size: 0.9em; text-align: center; margin-top: 10px; min-height: 20px; font-weight: 600; }
 
         /* BARRA DE EXPORTAÇÃO E IMPRESSÃO */
         .export-toolbar {
             display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
-            margin-top: 20px; padding-top: 18px; border-top: 1px solid #eee;
+            margin-top: 20px; padding-top: 18px; border-top: 1px solid #e2e8f0;
         }
         .btn-export {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 0.95em;
+            padding: 11px 18px; border-radius: 8px; font-weight: bold; font-size: 0.95em;
             cursor: pointer; border: none; transition: 0.2s; color: #fff; flex: 1; min-width: 180px;
         }
-        .btn-export.csv { background-color: var(--success); box-shadow: 0 3px 0 #1b5e20; }
+        .btn-export.csv { background-color: var(--alupar-green); box-shadow: 0 3px 0 var(--alupar-green-dark); }
         .btn-export.csv:active { transform: translateY(3px); box-shadow: none; }
-        .btn-export.print { background-color: #0277bd; box-shadow: 0 3px 0 #01579b; }
+        .btn-export.print { background-color: var(--alupar-blue); box-shadow: 0 3px 0 var(--alupar-blue-dark); }
         .btn-export.print:active { transform: translateY(3px); box-shadow: none; }
 
         /* GRADE DO FORMULÁRIO DE FÉRIAS (5 CAMPOS) */
@@ -84,15 +206,22 @@
         }
 
         /* LISTAGEM E ETIQUETAS (BADGES) */
-        .list-item { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid var(--secondary); transition: 0.2s; }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #f8fafc; padding: 12px 15px; margin-bottom: 8px;
+            border-radius: 8px; border: 1px solid #e2e8f0; border-left: 5px solid var(--alupar-green);
+            transition: 0.2s;
+        }
+        .list-item:hover { background: #f1f5f9; }
         .list-item.editing { border-left-color: var(--warning); background: #fff8e1; }
         .colab-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+        .colab-header strong { color: var(--alupar-blue); font-size: 1.02em; }
         .badge-meta {
             display: inline-block; padding: 2px 8px; border-radius: 5px;
-            font-size: 0.75em; font-weight: 700; letter-spacing: 0.3px;
+            font-size: 0.73em; font-weight: 700; letter-spacing: 0.4px;
         }
-        .badge-setor { background: #e0f2f1; color: var(--primary); border: 1px solid #b2dfdb; }
-        .badge-se { background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
+        .badge-setor { background: var(--alupar-green-light); color: var(--alupar-green-dark); border: 1px solid #b7e4c0; }
+        .badge-se { background: var(--alupar-blue-light); color: var(--alupar-blue); border: 1px solid #c5d4eb; }
 
         .item-actions { display: flex; gap: 8px; align-items: center; }
         .btn-icon {
@@ -110,23 +239,37 @@
         .filter-bar-container {
             display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;
             margin-bottom: 25px; background: #fff; padding: 15px 20px; border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(24, 52, 130, 0.06);
+            border: 1px solid #e2e8f0;
         }
         .filter-item { display: flex; align-items: center; gap: 8px; }
-        .filter-item label { margin: 0; white-space: nowrap; font-size: 0.9em; color: var(--primary); }
-        .filter-item select { height: 42px; min-width: 140px; font-weight: 600; font-size: 0.95em; padding: 0 10px; }
+        .filter-item label { margin: 0; white-space: nowrap; font-size: 0.9em; color: var(--alupar-blue); font-weight: 700; }
+        .filter-item select { height: 42px; min-width: 145px; font-weight: 600; font-size: 0.95em; padding: 0 10px; }
 
-        /* CALENDÁRIOS (COM PROTEÇÃO CONTRA CORTE LATERAL) */
+        /* CALENDÁRIOS COM IDENTIDADE ALUPAR */
         .calendars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
-        .calendar-box { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background: #fff; width: 100%; }
-        .calendar-header { background: var(--primary); color: #fff; text-align: center; padding: 10px; font-weight: bold; font-size: 1.1em; }
+        .calendar-box {
+            border: 1px solid #d8e2ef; border-radius: 12px; overflow: hidden;
+            background: #fff; width: 100%; box-shadow: 0 4px 12px rgba(24, 52, 130, 0.05);
+        }
+        .calendar-header {
+            background: var(--alupar-blue);
+            border-bottom: 3px solid var(--alupar-green);
+            color: #fff; text-align: center; padding: 10px;
+            font-weight: bold; font-size: 1.05em; letter-spacing: 0.3px;
+        }
         .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: 0.8em; width: 100%; }
-        .day-name { background: #f5f5f5; padding: 8px 0; font-weight: bold; color: #777; min-width: 0; }
-        .day-cell { border: 0.5px solid #eee; min-height: 60px; min-width: 0; overflow: hidden; padding: 3px 2px; font-size: 0.85em; display: flex; flex-direction: column; align-items: center; }
-        .day-num { font-weight: bold; margin-bottom: 2px; }
-        .day-cell.has-vacation { background-color: #e8f5e9; }
+        .day-name { background: #f1f5f9; padding: 8px 0; font-weight: 700; color: var(--alupar-blue); min-width: 0; border-bottom: 1px solid #e2e8f0; }
+        .day-cell { border: 0.5px solid #edf2f7; min-height: 60px; min-width: 0; overflow: hidden; padding: 3px 2px; font-size: 0.85em; display: flex; flex-direction: column; align-items: center; }
+        .day-num { font-weight: 700; margin-bottom: 2px; color: #334155; }
+        .day-cell.has-vacation { background-color: var(--alupar-green-light); }
         .day-cell.overlap { background-color: #ffebee; border-color: #ffcdd2; }
-        .vacation-tag { font-size: 0.62em; background: var(--secondary); color: white; padding: 1px 2px; border-radius: 3px; margin-top: 2px; width: 100%; max-width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .vacation-tag {
+            font-size: 0.62em; background: var(--alupar-green); color: white;
+            padding: 1px 2px; border-radius: 3px; margin-top: 2px; width: 100%; max-width: 100%;
+            text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: block; font-weight: 600;
+        }
         .day-cell.overlap .vacation-tag { background: var(--error); }
 
         @media (max-width: 900px) {
@@ -134,13 +277,14 @@
         }
 
         @media (max-width: 600px) {
-            body { align-items: flex-start; padding-top: calc(25px + var(--safe-top)); }
+            .alupar-topbar { padding: calc(12px + var(--safe-top)) 15px 12px; }
+            .brand-divider { display: none; }
+            .page-title { font-size: 1.05em; width: 100%; }
             .ferias-form-grid { grid-template-columns: 1fr; }
             .filter-bar-container { flex-direction: column; align-items: stretch; gap: 10px; }
             .filter-item { justify-content: space-between; }
             .filter-item select { flex: 1; }
             .day-cell { min-height: 52px; font-size: 0.75em; }
-            .page-title { font-size: 1.25em; }
             .export-toolbar { flex-direction: column; }
         }
 
@@ -150,6 +294,7 @@
             body { background: #fff !important; padding: 0 !important; display: block !important; }
             .app-container { max-width: 100% !important; width: 100% !important; }
             #page-login, .btn-logout, #blocoInputsFerias, .item-actions, .export-toolbar { display: none !important; }
+            .alupar-topbar { margin-bottom: 15px !important; padding: 10px 20px !important; }
             .container-box { box-shadow: none !important; border: 1px solid #ccc !important; padding: 15px !important; margin-bottom: 20px !important; }
             .filter-bar-container { box-shadow: none !important; border: 1px solid #eee !important; padding: 8px !important; margin-bottom: 15px !important; }
             .filter-item select { border: none !important; background: transparent !important; appearance: none; -webkit-appearance: none; font-weight: bold; padding: 0; }
@@ -164,26 +309,40 @@
 </head>
 <body>
 
-<div class="app-container">
-    <!-- LOGIN -->
-    <div id="page-login" class="page">
+<!-- TELA DE LOGIN -->
+<div id="page-login" class="page">
+    <div class="login-wrapper">
         <div class="login-container">
-            <span class="login-logo">🔒</span>
-            <h2>Acesso Restrito</h2>
-            <div class="form-group"><label>Usuário</label><input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username"></div>
-            <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="Digite sua senha" autocomplete="current-password"></div>
-            <div class="error-msg" id="loginError"></div>
-            <button class="main-btn" id="btnLogin" onclick="fazerLogin()">Entrar no Sistema</button>
+            <div class="login-banner">
+                <div class="alupar-logo">Al<span class="upar-bar">upar</span></div>
+                <p>Gestão de Férias - Regional Nordeste</p>
+            </div>
+            <div class="login-body">
+                <h2>🔒 Acesso Restrito</h2>
+                <div class="form-group"><label>Usuário</label><input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username"></div>
+                <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="Digite sua senha" autocomplete="current-password"></div>
+                <div class="error-msg" id="loginError"></div>
+                <button class="main-btn" id="btnLogin" onclick="fazerLogin()">Entrar no Sistema</button>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- FÉRIAS -->
-    <div id="page-ferias" class="page">
-        <div class="top-header">
-            <h1 class="page-title">🏖️ Gestão de Férias - Regional Nordeste</h1>
+<!-- TELA PRINCIPAL: GESTÃO DE FÉRIAS -->
+<div id="page-ferias" class="page">
+    <!-- CABEÇALHO OFICIAL ALUPAR -->
+    <header class="alupar-topbar">
+        <div class="topbar-content">
+            <div class="brand-group">
+                <div class="alupar-logo">Al<span class="upar-bar">upar</span></div>
+                <div class="brand-divider"></div>
+                <h1 class="page-title">Gestão de Férias - Regional Nordeste</h1>
+            </div>
             <button class="btn-logout" onclick="fazerLogout()">Sair 🚪</button>
         </div>
+    </header>
 
+    <div class="app-container">
         <div class="container-box" id="boxFormFerias">
             <div id="blocoInputsFerias">
                 <h2 class="form-title" id="tituloFormFerias">Cadastrar Período de Férias</h2>
@@ -599,7 +758,7 @@
         const listaFiltrada = obterListaFiltrada();
 
         if (!listaFiltrada.length) {
-            ld.innerHTML = '<p style="color:#999;text-align:center">Nenhuma féria encontrada para os filtros selecionados.</p>';
+            ld.innerHTML = '<p style="color:#94a3b8;text-align:center">Nenhuma féria encontrada para os filtros selecionados.</p>';
         } else {
             listaFiltrada.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
                 const isEditing = f.id === editandoFeriasId ? 'editing' : '';
