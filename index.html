@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#004d40">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>MANUTEL - Gestão de Férias</title>
+    <title>Gestão de Férias - Regional Nordeste</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
@@ -95,11 +95,16 @@
         .badge-se { background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
 
         .item-actions { display: flex; gap: 8px; align-items: center; }
-        .btn-icon { border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85em; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-        .btn-icon.edit { background: #fff3e0; color: var(--warning); }
-        .btn-icon.edit:active { background: var(--warning); color: #fff; }
-        .btn-icon.delete { background: #ffebee; color: var(--error); }
-        .btn-icon.delete:active { background: var(--error); color: #fff; }
+        .btn-icon {
+            border: none; width: 38px; height: 38px; border-radius: 8px;
+            font-weight: bold; font-size: 1.15em; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.15s, background-color 0.15s;
+        }
+        .btn-icon.edit { background: #fff3e0; color: var(--warning); border: 1px solid #ffe0b2; }
+        .btn-icon.edit:active { background: var(--warning); color: #fff; transform: scale(0.94); }
+        .btn-icon.delete { background: #ffebee; color: var(--error); border: 1px solid #ffcdd2; font-size: 1.25em; }
+        .btn-icon.delete:active { background: var(--error); color: #fff; transform: scale(0.94); }
 
         /* BARRA DE FILTROS DO CALENDÁRIO */
         .filter-bar-container {
@@ -135,9 +140,7 @@
             .filter-item { justify-content: space-between; }
             .filter-item select { flex: 1; }
             .day-cell { min-height: 52px; font-size: 0.75em; }
-            .page-title { font-size: 1.3em; }
-            .list-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .item-actions { width: 100%; justify-content: flex-end; border-top: 1px dashed #ddd; padding-top: 8px; }
+            .page-title { font-size: 1.25em; }
             .export-toolbar { flex-direction: column; }
         }
 
@@ -177,7 +180,7 @@
     <!-- FÉRIAS -->
     <div id="page-ferias" class="page">
         <div class="top-header">
-            <h1 class="page-title">🏖️ Gestão de Férias - MANUTEL</h1>
+            <h1 class="page-title">🏖️ Gestão de Férias - Regional Nordeste</h1>
             <button class="btn-logout" onclick="fazerLogout()">Sair 🚪</button>
         </div>
 
@@ -192,9 +195,9 @@
                     <div class="form-group" style="margin:0">
                         <label>Setor / Equipe</label>
                         <select id="fSetor">
-                            <option value="Telecomunicações">Telecomunicações</option>
+                            <option value="TELECOM">TELECOM</option>
                             <option value="SPCS">SPCS</option>
-                            <option value="Operação">Operação</option>
+                            <option value="OPERAÇÃO">OPERAÇÃO</option>
                             <option value="EAT">EAT</option>
                             <option value="LT">LT</option>
                         </select>
@@ -205,7 +208,7 @@
                             <option value="SE JZT">SE JZT</option>
                             <option value="SE GOR">SE GOR</option>
                             <option value="SE OUR">SE OUR</option>
-                            <option value="SE BJL">SE BJL</option>
+                            <option value="SE BJD">SE BJD</option>
                             <option value="SE SDS">SE SDS</option>
                             <option value="SE RDE">SE RDE</option>
                             <option value="SE RGD">SE RGD</option>
@@ -249,9 +252,9 @@
                 <label for="filtroSetor">🛠️ Setor:</label>
                 <select id="filtroSetor" onchange="renderFerias()">
                     <option value="TODOS">Todos os Setores</option>
-                    <option value="Telecomunicações">Telecomunicações</option>
+                    <option value="TELECOM">TELECOM</option>
                     <option value="SPCS">SPCS</option>
-                    <option value="Operação">Operação</option>
+                    <option value="OPERAÇÃO">OPERAÇÃO</option>
                     <option value="EAT">EAT</option>
                     <option value="LT">LT</option>
                 </select>
@@ -263,7 +266,7 @@
                     <option value="SE JZT">SE JZT</option>
                     <option value="SE GOR">SE GOR</option>
                     <option value="SE OUR">SE OUR</option>
-                    <option value="SE BJL">SE BJL</option>
+                    <option value="SE BJD">SE BJD</option>
                     <option value="SE SDS">SE SDS</option>
                     <option value="SE RDE">SE RDE</option>
                     <option value="SE RGD">SE RGD</option>
@@ -287,6 +290,20 @@
     let dbCache = { ferias: [] };
     let dbCarregado = false;
 
+    function normalizarRegistro(f) {
+        let setor = (f.setor || '').toUpperCase().trim();
+        if (setor === 'TELECOMUNICAÇÕES' || setor === 'TELECOMUNICACOES') setor = 'TELECOM';
+        
+        let se = (f.subestacao || '').toUpperCase().trim();
+        if (se === 'SE BJL' || se === 'BJL' || se === 'BJD') se = 'SE BJD';
+
+        return {
+            ...f,
+            setor: setor || f.setor,
+            subestacao: se || f.subestacao
+        };
+    }
+
     async function getDB() {
         try {
             const res = await fetch(`${URL_DB}/latest`, {
@@ -301,7 +318,7 @@
             if (json.record && typeof json.record === 'object') {
                 dbCache = {
                     ...json.record,
-                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias : []
+                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias.map(normalizarRegistro) : []
                 };
                 dbCarregado = true;
             }
@@ -429,8 +446,8 @@
         const seSel = document.getElementById('filtroSubestacao').value;
 
         return dbCache.ferias.filter(f => {
-            const matchSetor = setorSel === 'TODOS' || (f.setor || 'Não informado') === setorSel;
-            const matchSE = seSel === 'TODAS' || (f.subestacao || 'Não informada') === seSel;
+            const matchSetor = setorSel === 'TODOS' || (f.setor || 'NÃO INFORMADO') === setorSel;
+            const matchSE = seSel === 'TODAS' || (f.subestacao || 'NÃO INFORMADA') === seSel;
             return matchSetor && matchSE;
         });
     }
@@ -547,8 +564,8 @@
 
         listaOrdenada.forEach(f => {
             const nomeLimpo = `"${(f.nome || '').replace(/"/g, '""')}"`;
-            const setorLimpo = `"${(f.setor || 'Não informado').replace(/"/g, '""')}"`;
-            const seLimpa = `"${(f.subestacao || 'Não informada').replace(/"/g, '""')}"`;
+            const setorLimpo = `"${(f.setor || 'NÃO INFORMADO').replace(/"/g, '""')}"`;
+            const seLimpa = `"${(f.subestacao || 'NÃO INFORMADA').replace(/"/g, '""')}"`;
             const anoInicio = new Date(f.inicioTimestamp).getFullYear();
             const statusConflito = `"${verificarConflito(f, listaOrdenada)}"`;
             
@@ -561,7 +578,7 @@
         const anoRef = document.getElementById('anoSelecionado').value;
         
         link.setAttribute('href', url);
-        link.setAttribute('download', `escala_ferias_manutel_${anoRef}.csv`);
+        link.setAttribute('download', `ferias_regional_nordeste_${anoRef}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -586,8 +603,8 @@
         } else {
             listaFiltrada.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
                 const isEditing = f.id === editandoFeriasId ? 'editing' : '';
-                const setorTxt = f.setor || 'Sem Setor';
-                const seTxt = f.subestacao || 'Sem SE';
+                const setorTxt = f.setor || 'SEM SETOR';
+                const seTxt = f.subestacao || 'SEM SE';
                 
                 ld.innerHTML += `
                     <div class="list-item ${isEditing}">
@@ -600,8 +617,8 @@
                             <small>${f.inicioStr} até ${f.fimStr} <strong>(${f.dias} dias)</strong></small>
                         </div>
                         <div class="item-actions">
-                            <button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️ Editar</button>
-                            <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Remover">✖ Excluir</button>
+                            <button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Excluir">✖</button>
                         </div>
                     </div>`;
             });
