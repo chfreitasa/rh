@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#004d40">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>MANUTEL-SISTEMA INTEGRADO</title>
+    <title>MANUTEL - Gestão de Férias</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
@@ -24,137 +24,136 @@
         .page.active { display: block; }
         
         /* LOGIN */
-        .login-container { background: #fff; max-width: 400px; margin: 0 auto; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,77,64,0.15); width: 100%; }
+        .login-container { background: #fff; max-width: 400px; margin: 40px auto 0; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,77,64,0.15); width: 100%; }
         .login-container h2 { text-align: center; color: var(--primary); margin-top: 0; margin-bottom: 30px; font-size: 1.6em; }
         .login-logo { text-align: center; font-size: 3em; margin-bottom: 10px; display: block; }
 
-        /* HOME */
-        .home-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-logout { background: none; border: 2px solid var(--error); color: var(--error); padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9em; }
+        /* CABEÇALHO */
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .page-title { color: var(--primary); margin: 0; font-size: 1.6em; }
+        .btn-logout { background: #fff; border: 2px solid var(--error); color: var(--error); padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: 0.2s; }
         .btn-logout:active { background: var(--error); color: #fff; }
-        .home-cards { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
-        .home-card { background: #fff; padding: 25px 20px; border-radius: 16px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; border: 2px solid transparent; text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 20px; }
-        .home-card:active { transform: scale(0.98); border-color: var(--secondary); }
-        .home-icon { font-size: 2.5em; }
-        .home-title { font-size: 1.2em; font-weight: bold; color: var(--primary); margin: 0 0 5px 0; text-align: left; }
-        .home-desc { font-size: 0.9em; color: #777; margin: 0; text-align: left; }
-        .btn-back { background: none; border: none; color: var(--secondary); font-size: 1.1em; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 5px; font-weight: bold; }
-        h1.page-title, h2.page-title { text-align: center; color: var(--primary); margin-top: 0; }
 
-        /* GLOBAL FORMS */
+        /* FORMULÁRIOS GLOBAIS */
         .container-box { background: #fff; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,77,64,0.15); margin-bottom: 30px; }
+        .form-title { margin-top: 0; margin-bottom: 18px; color: var(--primary); font-size: 1.2em; text-align: center; }
         .form-group { margin-bottom: 18px; }
-        .input-wrapper { display: flex; gap: 10px; align-items: center; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.95em; color: #555; }
-        input[type="time"], input[type="text"], input[type="password"], input[type="number"], input[type="date"], select, textarea {
-            flex: 1; height: 50px; margin: 0; padding: 0 15px; border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 1.1em; background-color: #fafafa; font-family: inherit; color: var(--text); width: 100%;
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.92em; color: #555; }
+        input[type="text"], input[type="password"], input[type="number"], input[type="date"], select {
+            flex: 1; height: 50px; margin: 0; padding: 0 12px; border: 2px solid #e0e0e0; border-radius: 10px;
+            font-size: 1.02em; background-color: #fafafa; font-family: inherit; color: var(--text); width: 100%;
         }
-        textarea { height: auto; padding: 15px; resize: vertical; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--secondary); background-color: #fff; }
-        .btn-now { height: 50px; width: 50px; border: none; background: #f5f5f5; border-radius: 10px; font-size: 1.4em; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--secondary); flex: none; }
+        input:focus, select:focus { outline: none; border-color: var(--secondary); background-color: #fff; }
         button.main-btn {
             display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 55px;
             margin-top: 10px; background-color: var(--secondary); color: white; border: none; border-radius: 10px;
-            font-size: 1.15em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #004d40;
+            font-size: 1.15em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #004d40; transition: background-color 0.2s;
         }
         button.main-btn:active { transform: translateY(4px); box-shadow: none; background-color: var(--primary); }
         button.main-btn:disabled { background-color: #999; box-shadow: none; cursor: not-allowed; }
         button.main-btn.btn-edit-mode { background-color: var(--warning); box-shadow: 0 4px 0 #e65100; }
+        .btn-cancel {
+            display: none; width: 100%; margin-top: 10px; padding: 12px; background-color: #fff;
+            color: var(--error); border: 2px solid var(--error); border-radius: 10px; font-size: 1em;
+            font-weight: bold; cursor: pointer;
+        }
+        .btn-cancel:active { background-color: var(--error); color: #fff; }
         .error-msg { color: var(--error); font-size: 0.9em; text-align: center; margin-top: 10px; min-height: 20px; }
-        .btn-danger { display: block; width: 100%; margin-top: 20px; padding: 12px; background-color: #fff; color: var(--error); border: 2px solid var(--error); border-radius: 10px; font-size: 1em; font-weight: bold; cursor: pointer; }
-        .btn-danger:active { background-color: var(--error); color: #fff; }
 
-        /* PONTO */
-        .ponto-container { max-width: 500px; margin: 0 auto; }
-        .clock-box { background: var(--primary); color: #fff; text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 25px; font-size: 2.8em; font-weight: bold; letter-spacing: 3px; box-shadow: 0 4px 10px rgba(0,77,64,0.2); }
-        .result-box { margin-top: 25px; padding: 20px; background: #e8f5e9; border-left: 5px solid var(--success); border-radius: 8px; text-align: center; }
-        .result-time { font-size: 2.2em; font-weight: 800; color: var(--success); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.95em; margin-top: 15px; }
-        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; }
-        th { color: #777; font-weight: 600; font-size: 0.85em; text-transform: uppercase; }
+        /* BARRA DE EXPORTAÇÃO E IMPRESSÃO */
+        .export-toolbar {
+            display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
+            margin-top: 20px; padding-top: 18px; border-top: 1px solid #eee;
+        }
+        .btn-export {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 0.95em;
+            cursor: pointer; border: none; transition: 0.2s; color: #fff; flex: 1; min-width: 180px;
+        }
+        .btn-export.csv { background-color: var(--success); box-shadow: 0 3px 0 #1b5e20; }
+        .btn-export.csv:active { transform: translateY(3px); box-shadow: none; }
+        .btn-export.print { background-color: #0277bd; box-shadow: 0 3px 0 #01579b; }
+        .btn-export.print:active { transform: translateY(3px); box-shadow: none; }
 
-        /* FERIAS */
-        .ferias-form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: end; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 10px 15px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid var(--secondary); }
-        .list-item button { background: none; border: none; color: var(--error); font-weight: bold; font-size: 1.2em; cursor: pointer; }
-        .year-selector-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .year-selector-container select { max-width: 150px; text-align: center; font-weight: bold; }
-        .calendars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .calendar-box { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background: #fff; }
+        /* GRADE DO FORMULÁRIO DE FÉRIAS (5 CAMPOS) */
+        .ferias-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1.4fr 1.1fr 0.8fr 1.3fr;
+            gap: 12px;
+            align-items: end;
+        }
+
+        /* LISTAGEM E ETIQUETAS (BADGES) */
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid var(--secondary); transition: 0.2s; }
+        .list-item.editing { border-left-color: var(--warning); background: #fff8e1; }
+        .colab-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+        .badge-meta {
+            display: inline-block; padding: 2px 8px; border-radius: 5px;
+            font-size: 0.75em; font-weight: 700; letter-spacing: 0.3px;
+        }
+        .badge-setor { background: #e0f2f1; color: var(--primary); border: 1px solid #b2dfdb; }
+        .badge-se { background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
+
+        .item-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-icon { border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; font-size: 0.85em; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-icon.edit { background: #fff3e0; color: var(--warning); }
+        .btn-icon.edit:active { background: var(--warning); color: #fff; }
+        .btn-icon.delete { background: #ffebee; color: var(--error); }
+        .btn-icon.delete:active { background: var(--error); color: #fff; }
+
+        /* BARRA DE FILTROS DO CALENDÁRIO */
+        .filter-bar-container {
+            display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;
+            margin-bottom: 25px; background: #fff; padding: 15px 20px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .filter-item { display: flex; align-items: center; gap: 8px; }
+        .filter-item label { margin: 0; white-space: nowrap; font-size: 0.9em; color: var(--primary); }
+        .filter-item select { height: 42px; min-width: 140px; font-weight: 600; font-size: 0.95em; padding: 0 10px; }
+
+        /* CALENDÁRIOS (COM PROTEÇÃO CONTRA CORTE LATERAL) */
+        .calendars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
+        .calendar-box { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background: #fff; width: 100%; }
         .calendar-header { background: var(--primary); color: #fff; text-align: center; padding: 10px; font-weight: bold; font-size: 1.1em; }
-        .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.8em; }
-        .day-name { background: #f5f5f5; padding: 8px 0; font-weight: bold; color: #777; }
-        .day-cell { border: 0.5px solid #eee; min-height: 60px; padding: 4px; font-size: 0.85em; display: flex; flex-direction: column; align-items: center; }
+        .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: 0.8em; width: 100%; }
+        .day-name { background: #f5f5f5; padding: 8px 0; font-weight: bold; color: #777; min-width: 0; }
+        .day-cell { border: 0.5px solid #eee; min-height: 60px; min-width: 0; overflow: hidden; padding: 3px 2px; font-size: 0.85em; display: flex; flex-direction: column; align-items: center; }
         .day-num { font-weight: bold; margin-bottom: 2px; }
         .day-cell.has-vacation { background-color: #e8f5e9; }
         .day-cell.overlap { background-color: #ffebee; border-color: #ffcdd2; }
-        .vacation-tag { font-size: 0.65em; background: var(--secondary); color: white; padding: 1px 4px; border-radius: 3px; margin-top: 1px; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vacation-tag { font-size: 0.62em; background: var(--secondary); color: white; padding: 1px 2px; border-radius: 3px; margin-top: 2px; width: 100%; max-width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
         .day-cell.overlap .vacation-tag { background: var(--error); }
 
-        /* ATIVIDADES */
-        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-        .dash-card { background: #fff; padding: 15px 10px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-top: 5px solid #ccc; }
-        .dash-card.total { border-color: var(--secondary); }
-        .dash-card.andamento { border-color: var(--warning); }
-        .dash-card.atrasada { border-color: var(--error); }
-        .dash-card.concluida { border-color: var(--success); }
-        .dash-num { font-size: 2em; font-weight: 800; color: var(--text); }
-        .dash-label { font-size: 0.85em; color: #777; font-weight: bold; margin-top: 5px; }
-        
-        .tech-selector { display: flex; gap: 10px; flex-wrap: wrap; }
-        .tech-btn { padding: 10px 15px; border: 2px solid #ddd; border-radius: 8px; background: #fff; font-weight: bold; color: #777; cursor: pointer; flex: 1; text-align: center; min-width: 80px; transition: 0.2s; }
-        .tech-btn.selected { border-color: var(--secondary); background: var(--secondary); color: #fff; }
-        
-        .atividade-list-item { background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 5px solid var(--secondary); }
-        .atividade-list-item.atrasada { border-left-color: var(--error); background: #fff5f5; }
-        .atividade-list-item.concluida { border-left-color: var(--success); background: #f1f8e9; opacity: 0.8; }
-        
-        .atv-info-grid { font-size: 0.9em; color: #555; }
-        .atv-info-grid div { margin-bottom: 4px; }
-        .atv-info-grid strong { color: var(--primary); }
-        
-        .atv-actions { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #ccc; display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn-action { border: none; padding: 6px 12px; border-radius: 5px; font-size: 0.85em; font-weight: bold; cursor: pointer; }
-        .btn-action.success { background: #e8f5e9; color: var(--success); }
-        .btn-action.warning { background: #fff3e0; color: var(--warning); }
-        .btn-action.danger { background: #ffebee; color: var(--error); }
-
-        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: white; font-weight: bold; margin-left: 8px; vertical-align: middle; }
-        .status-badge.atrasada { background: var(--error); }
-        .status-badge.andamento { background: var(--warning); }
-        .status-badge.concluida { background: var(--success); }
-
-        /* GRÁFICO GANTT (TABELA DIÁRIA) */
-        .gantt-container { margin-top: 30px; background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .gantt-title { text-align: center; color: var(--primary); margin-top: 0; }
-        .gantt-table { border-collapse: collapse; width: max-content; min-width: 100%; }
-        .gantt-table th, .gantt-table td { border: 1px solid #eee; padding: 0; }
-        .gantt-task-header, .gantt-task-name { 
-            text-align: left; padding: 10px; position: sticky; left: 0; background: #fff; z-index: 2; 
-            border-right: 2px solid #ddd; min-width: 130px; max-width: 130px; word-wrap: break-word; font-size: 0.85em;
+        @media (max-width: 900px) {
+            .ferias-form-grid { grid-template-columns: 1fr 1fr; }
         }
-        .gantt-day-header { font-size: 0.7em; padding: 8px 2px; text-align: center; min-width: 32px; background: #f9f9f9; color: #555; }
-        .gantt-cell { height: 35px; min-width: 32px; background: #fff; }
-        .gantt-active-andamento { background-color: #ffe0b2; }
-        .gantt-active-atrasada { background-color: #ffcdd2; }
-        .gantt-today { background-color: #e3f2fd !important; box-shadow: inset 0 0 0 2px #2196f3; z-index: 1; position: relative; }
 
         @media (max-width: 600px) {
-            body { align-items: flex-start; padding-top: calc(40px + var(--safe-top)); }
-            .ferias-form-grid, .atividade-form-grid { grid-template-columns: 1fr; }
-            .ponto-container { padding: 15px; }
-            .clock-box { font-size: 2.2em; padding: 15px; }
-            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-            #page-ponto table, #page-ponto thead, #page-ponto tbody, #page-ponto th, #page-ponto td, #page-ponto tr { display: block; }
-            #page-ponto thead tr { display: none; }
-            #page-ponto tr { border: 1px solid #eee; border-radius: 10px; margin-bottom: 15px; padding: 10px; }
-            #page-ponto td { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; border-bottom: 1px solid #f5f5f5; text-align: right; }
-            #page-ponto td:last-child { border-bottom: none; }
-            #page-ponto td::before { content: attr(data-label); font-weight: bold; text-transform: uppercase; font-size: 0.8em; color: #777; margin-right: 10px; text-align: left; }
-            #page-ponto td:nth-child(1)::before { display: none; }
-            #page-ponto td:nth-child(1) { justify-content: center; font-weight: bold; color: var(--primary); border-bottom: 2px solid var(--secondary); margin-bottom: 5px; padding-bottom: 10px; }
-            .day-cell { min-height: 50px; font-size: 0.75em; }
+            body { align-items: flex-start; padding-top: calc(25px + var(--safe-top)); }
+            .ferias-form-grid { grid-template-columns: 1fr; }
+            .filter-bar-container { flex-direction: column; align-items: stretch; gap: 10px; }
+            .filter-item { justify-content: space-between; }
+            .filter-item select { flex: 1; }
+            .day-cell { min-height: 52px; font-size: 0.75em; }
+            .page-title { font-size: 1.3em; }
+            .list-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .item-actions { width: 100%; justify-content: flex-end; border-top: 1px dashed #ddd; padding-top: 8px; }
+            .export-toolbar { flex-direction: column; }
+        }
+
+        /* ESTILOS DE IMPRESSÃO / PDF */
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { background: #fff !important; padding: 0 !important; display: block !important; }
+            .app-container { max-width: 100% !important; width: 100% !important; }
+            #page-login, .btn-logout, #blocoInputsFerias, .item-actions, .export-toolbar { display: none !important; }
+            .container-box { box-shadow: none !important; border: 1px solid #ccc !important; padding: 15px !important; margin-bottom: 20px !important; }
+            .filter-bar-container { box-shadow: none !important; border: 1px solid #eee !important; padding: 8px !important; margin-bottom: 15px !important; }
+            .filter-item select { border: none !important; background: transparent !important; appearance: none; -webkit-appearance: none; font-weight: bold; padding: 0; }
+            .calendars-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 12px !important; }
+            .calendar-box { break-inside: avoid; page-break-inside: avoid; }
+            .day-cell { min-height: 45px !important; }
+            .list-item { break-inside: avoid; page-break-inside: avoid; border: 1px solid #eee; }
         }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -175,114 +174,117 @@
         </div>
     </div>
 
-    <!-- HOME -->
-    <div id="page-home" class="page">
-        <div class="home-header">
-            <h1 class="page-title" style="margin:0;">Sistema Integrado de Gestão</h1>
+    <!-- FÉRIAS -->
+    <div id="page-ferias" class="page">
+        <div class="top-header">
+            <h1 class="page-title">🏖️ Gestão de Férias - MANUTEL</h1>
             <button class="btn-logout" onclick="fazerLogout()">Sair 🚪</button>
         </div>
-        <div class="home-cards">
-            <a class="home-card" href="#ponto"><span class="home-icon">🕒</span><div><h2 class="home-title">Controle de Ponto</h2><p class="home-desc">Calcular hora de saída diária.</p></div></a>
-            <a class="home-card" href="#ferias"><span class="home-icon">🏖️</span><div><h2 class="home-title">Gestão de Férias</h2><p class="home-desc">Calendário visual de férias.</p></div></a>
-            <a class="home-card" href="#atividades"><span class="home-icon">📡</span><div><h2 class="home-title">Atividades Telecom</h2><p class="home-desc">Gestão, atribuição e dashboards.</p></div></a>
-        </div>
-    </div>
 
-    <!-- PONTO -->
-    <div id="page-ponto" class="page">
-        <button class="btn-back" onclick="location.hash='#home'">← Voltar</button>
-        <div class="ponto-container container-box">
-            <h2 class="page-title">Controle de Ponto Diário</h2>
-            <div class="clock-box" id="relogio">00:00:00</div>
-            <div class="form-group"><label>Entrada</label><div class="input-wrapper"><input type="time" id="entrada" value="07:30" required><button class="btn-now" onclick="preencherHoraAgora('entrada')">⏱</button></div></div>
-            <div class="form-group"><label>Saída Almoço</label><div class="input-wrapper"><input type="time" id="saidaAlmoco" value="12:00" required><button class="btn-now" onclick="preencherHoraAgora('saidaAlmoco')">⏱</button></div></div>
-            <div class="form-group"><label>Retorno Almoço</label><div class="input-wrapper"><input type="time" id="retornoAlmoco" value="13:00" required><button class="btn-now" onclick="preencherHoraAgora('retornoAlmoco')">⏱</button></div></div>
-            <div class="error-msg" id="errorMsg"></div>
-            <button class="main-btn" onclick="calcularESalvar()">Calcular Saída Exata</button>
-            <div id="resultadoContainer" class="result-box" style="display: none;"><div class="result-title">Você deve sair às:</div><div class="result-time" id="horaSaidaCalculada">--:--</div></div>
-            <div style="margin-top: 35px;"><h3 style="font-size:1.1em; color:var(--primary);">📋 Histórico</h3><table><thead><tr><th>Data</th><th>Entrada</th><th>Saída</th><th>Retorno</th><th>Final</th></tr></thead><tbody id="tabelaHistorico"></tbody></table><button class="btn-danger" onclick="limparHistorico()">Limpar Histórico</button></div>
-        </div>
-    </div>
-
-    <!-- FERIAS -->
-    <div id="page-ferias" class="page">
-        <button class="btn-back" onclick="location.hash='#home'">← Voltar</button>
-        <h1 class="page-title">🏖️ Gestão de Férias</h1>
-        <div class="container-box">
-            <div class="ferias-form-grid">
-                <div class="form-group" style="margin:0"><label>Colaborador</label><input type="text" id="fColab" placeholder="Nome"></div>
-                <div class="form-group" style="margin:0"><label>Dias</label><input type="number" id="fDias" min="1" max="30"></div>
-                <div class="form-group" style="margin:0"><label>Início</label><input type="date" id="fInicio" value="2026-01-05"></div>
-            </div>
-            <div class="error-msg" id="errorMsgFerias"></div>
-            <button class="main-btn" style="margin-top:15px;" onclick="adicionarFerias()">Adicionar Férias</button>
-            <div id="listaFerias" style="margin-top: 20px;"></div>
-        </div>
-        <div class="year-selector-container"><label>Ano:</label><select id="anoSelecionado" onchange="renderFerias()"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option><option value="2028">2028</option></select></div>
-        <div class="calendars-grid" id="calendariosContainer"></div>
-    </div>
-
-    <!-- ATIVIDADES -->
-    <div id="page-atividades" class="page">
-        <button class="btn-back" onclick="location.hash='#home'">← Voltar</button>
-        <h1 class="page-title">📡 Gestão de Atividades</h1>
-        
-        <div class="dashboard-grid">
-            <div class="dash-card total"><div class="dash-num" id="dashTotal">0</div><div class="dash-label">Total</div></div>
-            <div class="dash-card andamento"><div class="dash-num" id="dashAndamento">0</div><div class="dash-label">Em Andamento</div></div>
-            <div class="dash-card atrasada"><div class="dash-num" id="dashAtrasada">0</div><div class="dash-label">Atrasadas</div></div>
-            <div class="dash-card concluida"><div class="dash-num" id="dashConcluida">0</div><div class="dash-label">Concluídas</div></div>
-        </div>
-
-        <div class="container-box">
-            <h2 class="page-title" id="tituloFormAtv">Nova Atividade</h2>
-            <div class="form-group"><label>Título da Atividade</label><input type="text" id="aTitulo" placeholder="Ex: Manutenção FO Node X"></div>
-            
-            <div class="form-group">
-                <label>Atribuir para (Técnicos)</label>
-                <div class="tech-selector">
-                    <div class="tech-btn" data-tech="Carlos" onclick="toggleTech(this)">Carlos</div>
-                    <div class="tech-btn" data-tech="Ebert" onclick="toggleTech(this)">Ebert</div>
-                    <div class="tech-btn" data-tech="Kleiton" onclick="toggleTech(this)">Kleiton</div>
+        <div class="container-box" id="boxFormFerias">
+            <div id="blocoInputsFerias">
+                <h2 class="form-title" id="tituloFormFerias">Cadastrar Período de Férias</h2>
+                <div class="ferias-form-grid">
+                    <div class="form-group" style="margin:0">
+                        <label>Colaborador</label>
+                        <input type="text" id="fColab" placeholder="Nome do colaborador">
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label>Setor / Equipe</label>
+                        <select id="fSetor">
+                            <option value="Telecomunicações">Telecomunicações</option>
+                            <option value="SPCS">SPCS</option>
+                            <option value="Operação">Operação</option>
+                            <option value="EAT">EAT</option>
+                            <option value="LT">LT</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label>Subestação</label>
+                        <select id="fSubestacao">
+                            <option value="SE JZT">SE JZT</option>
+                            <option value="SE GOR">SE GOR</option>
+                            <option value="SE OUR">SE OUR</option>
+                            <option value="SE BJL">SE BJL</option>
+                            <option value="SE SDS">SE SDS</option>
+                            <option value="SE RDE">SE RDE</option>
+                            <option value="SE RGD">SE RGD</option>
+                            <option value="SE JCT">SE JCT</option>
+                            <option value="SE JCD">SE JCD</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label>Dias</label>
+                        <input type="number" id="fDias" min="1" max="30" placeholder="Ex: 15">
+                    </div>
+                    <div class="form-group" style="margin:0">
+                        <label>Início</label>
+                        <input type="date" id="fInicio" value="2026-01-05">
+                    </div>
                 </div>
+                <div class="error-msg" id="errorMsgFerias"></div>
+                <button class="main-btn" id="btnSalvarFerias" style="margin-top:15px;" onclick="salvarFerias()">Adicionar Férias</button>
+                <button class="btn-cancel" id="btnCancelarFerias" onclick="cancelarEdicaoFerias()">Cancelar Edição</button>
             </div>
+            
+            <div id="listaFerias" style="margin-top: 25px;"></div>
 
-            <div class="atividade-form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <div class="form-group" style="margin:0"><label>Data Início</label><input type="date" id="aDataInicio" onchange="calcularDiasAtv()"></div>
-                <div class="form-group" style="margin:0"><label>Data Fim</label><input type="date" id="aDataFim" onchange="calcularDiasAtv()"></div>
+            <div class="export-toolbar">
+                <button class="btn-export csv" onclick="exportarCSV()">📊 Exportar Excel (CSV)</button>
+                <button class="btn-export print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
             </div>
-            <div style="text-align:center; font-weight:bold; color:var(--primary); margin-bottom:15px;" id="aDiasCalc"></div>
+        </div>
 
-            <div class="form-group">
-                <label>Status</label>
-                <select id="aStatus">
-                    <option value="Em Andamento">Em Andamento</option>
-                    <option value="Concluída">Concluída</option>
+        <div class="filter-bar-container">
+            <div class="filter-item">
+                <label for="anoSelecionado">📅 Ano:</label>
+                <select id="anoSelecionado" onchange="renderFerias()">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
                 </select>
             </div>
-
-            <div class="error-msg" id="errorMsgAtv"></div>
-            <button class="main-btn" id="btnSalvarAtv" onclick="salvarAtividade()">Cadastrar Atividade</button>
-            <button class="btn-danger" id="btnCancelarEdit" style="display:none; margin-top:10px;" onclick="cancelarEdicaoAtv()">Cancelar Edição</button>
+            <div class="filter-item">
+                <label for="filtroSetor">🛠️ Setor:</label>
+                <select id="filtroSetor" onchange="renderFerias()">
+                    <option value="TODOS">Todos os Setores</option>
+                    <option value="Telecomunicações">Telecomunicações</option>
+                    <option value="SPCS">SPCS</option>
+                    <option value="Operação">Operação</option>
+                    <option value="EAT">EAT</option>
+                    <option value="LT">LT</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filtroSubestacao">⚡ Subestação:</label>
+                <select id="filtroSubestacao" onchange="renderFerias()">
+                    <option value="TODAS">Todas as SEs</option>
+                    <option value="SE JZT">SE JZT</option>
+                    <option value="SE GOR">SE GOR</option>
+                    <option value="SE OUR">SE OUR</option>
+                    <option value="SE BJL">SE BJL</option>
+                    <option value="SE SDS">SE SDS</option>
+                    <option value="SE RDE">SE RDE</option>
+                    <option value="SE RGD">SE RGD</option>
+                    <option value="SE JCT">SE JCT</option>
+                    <option value="SE JCD">SE JCD</option>
+                </select>
+            </div>
         </div>
 
-        <div id="listaAtividades"></div>
-
-        <div class="gantt-container">
-            <h3 class="gantt-title">📊 Cronograma Dia a Dia</h3>
-            <div id="ganttChartArea" style="margin-top:20px;"></div>
-        </div>
+        <div class="calendars-grid" id="calendariosContainer"></div>
     </div>
 </div>
 
 <script>
     // ==========================================
-    // BANCO DE DADOS (SINCRONIZAÇÃO CORRIGIDA)
+    // BANCO DE DADOS (SINCRONIZAÇÃO SEGURA)
     // ==========================================
     const BIN_ID = '6a7dd104da38895dfedfe24d'; 
     const API_KEY = '$2a$10$KMiP/Zy1E5f0NzxO2r4tcu24duXEofxlQ6S5ON2H0iJdaerfpjk86';
     const URL_DB = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-    let dbCache = { ponto: [], ferias: [], atividades: [] };
+    let dbCache = { ferias: [] };
     let dbCarregado = false;
 
     async function getDB() {
@@ -298,16 +300,15 @@
             const json = await res.json();
             if (json.record && typeof json.record === 'object') {
                 dbCache = {
-                    ponto: Array.isArray(json.record.ponto) ? json.record.ponto : [],
-                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias : [],
-                    atividades: Array.isArray(json.record.atividades) ? json.record.atividades : []
+                    ...json.record,
+                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias : []
                 };
                 dbCarregado = true;
             }
             return dbCache;
         } catch (e) {
             console.error("Erro ao buscar banco:", e);
-            alert("Atenção: Não foi possível carregar os dados do servidor. Verifique sua conexão antes de salvar novos itens.");
+            alert("Atenção: Não foi possível carregar os dados do servidor. Verifique sua conexão antes de fazer alterações.");
             return dbCache;
         }
     }
@@ -359,7 +360,7 @@
             await getDB();
             btn.disabled = false;
             btn.innerText = 'Entrar no Sistema';
-            location.hash = '#home'; 
+            location.hash = '#ferias'; 
         } else { 
             e.innerText = 'Usuário ou senha incorretos.'; 
             e.style.opacity = '1'; 
@@ -370,152 +371,244 @@
     function fazerLogout() { 
         sessionStorage.removeItem('etb_logged'); 
         dbCarregado = false;
+        cancelarEdicaoFerias();
         location.hash = '#login'; 
     }
 
     document.addEventListener('keydown', e => { 
-        if (e.key === 'Enter' && location.hash === '#login') fazerLogin(); 
+        if (e.key === 'Enter' && (!isLoggedIn() || location.hash === '#login')) fazerLogin(); 
     });
 
     async function navigate() {
-        if (!isLoggedIn() && location.hash !== '#login') { 
-            location.hash = '#login'; 
+        if (!isLoggedIn()) { 
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-login').classList.add('active');
+            if (location.hash !== '#login') location.hash = '#login';
             return; 
         }
-        if (isLoggedIn() && !dbCarregado) {
+
+        if (!dbCarregado) {
             await getDB();
         }
-        const hash = location.hash || '#home';
+
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        if (hash === '#login') document.getElementById('page-login').classList.add('active');
-        else if (hash === '#home') document.getElementById('page-home').classList.add('active');
-        else if (hash === '#ponto') { document.getElementById('page-ponto').classList.add('active'); carregarHistorico(); }
-        else if (hash === '#ferias') { document.getElementById('page-ferias').classList.add('active'); renderFerias(); }
-        else if (hash === '#atividades') { document.getElementById('page-atividades').classList.add('active'); renderAtividades(); }
+        document.getElementById('page-ferias').classList.add('active');
+        if (location.hash !== '#ferias') location.hash = '#ferias';
+        renderFerias();
     }
 
     window.addEventListener('hashchange', navigate);
-    window.addEventListener('load', async () => {
-        if (isLoggedIn()) { 
-            await getDB(); 
-            if (location.hash === '#login' || location.hash === '') location.hash = '#home'; 
-        } else {
-            location.hash = '#login';
-        }
-        navigate();
-    });
+    window.addEventListener('load', navigate);
 
     // ==========================================
-    // PONTO
-    // ==========================================
-    function atualizarRelogio() { 
-        const a = new Date(); 
-        document.getElementById('relogio').innerText = `${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`; 
-    }
-    setInterval(atualizarRelogio, 1000); 
-    atualizarRelogio();
-
-    function preencherHoraAgora(id) { 
-        const a = new Date(); 
-        document.getElementById(id).value = `${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}`; 
-    }
-
-    async function calcularESalvar() {
-        let e = document.getElementById('entrada').value, 
-            sa = document.getElementById('saidaAlmoco').value, 
-            ra = document.getElementById('retornoAlmoco').value;
-        if (!e || !sa || !ra) return showError("Preencha todos.");
-        let me = timeToMinutes(e), msa = timeToMinutes(sa), mra = timeToMinutes(ra), tm = msa - me;
-        if (tm <= 0) return showError("Almoço deve ser depois da entrada.");
-        let hs = minutesToTime(mra + (528 - tm));
-        document.getElementById('horaSaidaCalculada').innerText = hs; 
-        document.getElementById('resultadoContainer').style.display = 'block';
-        dbCache.ponto.unshift({
-            data: new Date().toLocaleDateString('pt-BR'),
-            entrada: e,
-            saidaAlmoco: sa,
-            retornoAlmoco: ra,
-            saidaFinal: hs
-        });
-        if (dbCache.ponto.length > 15) dbCache.ponto.pop();
-        await saveDB(); 
-        carregarHistorico();
-    }
-
-    function timeToMinutes(t) { if (!t) return 0; let p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1]); }
-    function minutesToTime(m) { return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
-    function showError(msg) { const el = document.getElementById('errorMsg'); el.innerText = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 3000); }
-    
-    function carregarHistorico() {
-        let tb = document.getElementById('tabelaHistorico');
-        tb.innerHTML = '';
-        if (!dbCache.ponto.length) return tb.innerHTML = '<tr><td colspan="5" style="color:#999;padding:20px">Vazio.</td></tr>';
-        dbCache.ponto.forEach(i => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td data-label="Data">${i.data}</td><td data-label="Ent">${i.entrada}</td><td data-label="Sai">${i.saidaAlmoco}</td><td data-label="Ret">${i.retornoAlmoco}</td><td data-label="Final"><strong>${i.saidaFinal}</strong></td>`;
-            tb.appendChild(tr);
-        });
-    }
-
-    async function limparHistorico() {
-        if (confirm("Apagar histórico?")) {
-            dbCache.ponto = [];
-            await saveDB();
-            carregarHistorico();
-        }
-    }
-
-    // ==========================================
-    // FERIAS
+    // GESTÃO DE FÉRIAS (CADASTRO E EDIÇÃO)
     // ==========================================
     const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     const DIAS_SEMANA = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    let editandoFeriasId = null;
     
-    function showErrorFerias(msg) { const el = document.getElementById('errorMsgFerias'); el.innerText = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 3000); }
+    function showErrorFerias(msg) { 
+        const el = document.getElementById('errorMsgFerias'); 
+        el.innerText = msg; 
+        el.style.opacity = '1'; 
+        setTimeout(() => el.style.opacity = '0', 3000); 
+    }
+
+    function extrairDataInput(f) {
+        if (f.inicioIso) return f.inicioIso;
+        if (f.inicioStr && f.inicioStr.includes('/')) {
+            const [dia, mes, ano] = f.inicioStr.split('/');
+            return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+        }
+        const d = new Date(f.inicioTimestamp);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function obterListaFiltrada() {
+        const setorSel = document.getElementById('filtroSetor').value;
+        const seSel = document.getElementById('filtroSubestacao').value;
+
+        return dbCache.ferias.filter(f => {
+            const matchSetor = setorSel === 'TODOS' || (f.setor || 'Não informado') === setorSel;
+            const matchSE = seSel === 'TODAS' || (f.subestacao || 'Não informada') === seSel;
+            return matchSetor && matchSE;
+        });
+    }
     
-    async function adicionarFerias() {
+    async function salvarFerias() {
         let n = document.getElementById('fColab').value.trim(),
+            setor = document.getElementById('fSetor').value,
+            subestacao = document.getElementById('fSubestacao').value,
             d = parseInt(document.getElementById('fDias').value),
             i = document.getElementById('fInicio').value;
-        if (!n || !d || !i) return showErrorFerias("Preencha tudo.");
-        if (d < 1 || d > 30) return showErrorFerias("Máx 30 dias.");
-        let id = new Date(i + "T00:00:00"), fd = new Date(id);
-        fd.setDate(fd.getDate() + d - 1);
-        dbCache.ferias.push({
-            id: Date.now(),
+        if (!n || !setor || !subestacao || !d || !i) return showErrorFerias("Preencha todos os campos.");
+        if (d < 1 || d > 30) return showErrorFerias("O período deve ser entre 1 e 30 dias.");
+        
+        let idDate = new Date(i + "T00:00:00"), fdDate = new Date(idDate);
+        fdDate.setDate(fdDate.getDate() + d - 1);
+
+        let dadosFerias = {
             nome: n,
+            setor: setor,
+            subestacao: subestacao,
             dias: d,
-            inicioStr: id.toLocaleDateString('pt-BR'),
-            fimStr: fd.toLocaleDateString('pt-BR'),
-            inicioTimestamp: id.getTime(),
-            fimTimestamp: fd.getTime()
-        });
-        document.getElementById('fColab').value = '';
-        document.getElementById('fDias').value = '';
+            inicioIso: i,
+            inicioStr: idDate.toLocaleDateString('pt-BR'),
+            fimStr: fdDate.toLocaleDateString('pt-BR'),
+            inicioTimestamp: idDate.getTime(),
+            fimTimestamp: fdDate.getTime()
+        };
+
+        if (editandoFeriasId !== null) {
+            let idx = dbCache.ferias.findIndex(f => f.id === editandoFeriasId);
+            if (idx !== -1) {
+                dbCache.ferias[idx] = { ...dbCache.ferias[idx], ...dadosFerias };
+            }
+            limparFormularioFerias();
+        } else {
+            dbCache.ferias.push({
+                id: Date.now(),
+                ...dadosFerias
+            });
+            document.getElementById('fColab').value = '';
+            document.getElementById('fDias').value = '';
+        }
+        
         await saveDB();
         renderFerias();
     }
 
+    function editarFerias(id) {
+        const f = dbCache.ferias.find(item => item.id === id);
+        if (!f) return;
+
+        editandoFeriasId = id;
+        document.getElementById('fColab').value = f.nome;
+        if (f.setor) document.getElementById('fSetor').value = f.setor;
+        if (f.subestacao) document.getElementById('fSubestacao').value = f.subestacao;
+        document.getElementById('fDias').value = f.dias;
+        document.getElementById('fInicio').value = extrairDataInput(f);
+
+        document.getElementById('tituloFormFerias').innerText = "Editando Período de Férias";
+        const btnSalvar = document.getElementById('btnSalvarFerias');
+        btnSalvar.innerText = "Salvar Alterações";
+        btnSalvar.classList.add('btn-edit-mode');
+        document.getElementById('btnCancelarFerias').style.display = 'block';
+
+        renderFerias();
+        document.getElementById('boxFormFerias').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelarEdicaoFerias() {
+        limparFormularioFerias();
+        renderFerias();
+    }
+
+    function limparFormularioFerias() {
+        editandoFeriasId = null;
+        document.getElementById('fColab').value = '';
+        document.getElementById('fDias').value = '';
+        document.getElementById('tituloFormFerias').innerText = "Cadastrar Período de Férias";
+        const btnSalvar = document.getElementById('btnSalvarFerias');
+        btnSalvar.innerText = "Adicionar Férias";
+        btnSalvar.classList.remove('btn-edit-mode');
+        document.getElementById('btnCancelarFerias').style.display = 'none';
+    }
+
     async function removerFerias(id) {
-        if (!confirm("Remover?")) return;
+        if (!confirm("Remover este período de férias?")) return;
+        if (editandoFeriasId === id) limparFormularioFerias();
         dbCache.ferias = dbCache.ferias.filter(f => f.id !== id);
         await saveDB();
         renderFerias();
     }
 
+    // ==========================================
+    // EXPORTAÇÃO (CSV / EXCEL) E IMPRESSÃO (PDF)
+    // ==========================================
+    function verificarConflito(registroAtual, listaCompleta) {
+        const conflitantes = listaCompleta.filter(outro => 
+            outro.id !== registroAtual.id &&
+            registroAtual.inicioTimestamp <= outro.fimTimestamp &&
+            registroAtual.fimTimestamp >= outro.inicioTimestamp
+        );
+        if (conflitantes.length === 0) return "Sem conflito";
+        return "Conflito com: " + conflitantes.map(c => `${c.nome} (${c.setor || 'S/S'} - ${c.subestacao || 'S/SE'})`).join(", ");
+    }
+
+    function exportarCSV() {
+        const listaParaExportar = obterListaFiltrada();
+        if (!listaParaExportar || listaParaExportar.length === 0) {
+            return showErrorFerias("Não há registros de férias no filtro atual para exportar.");
+        }
+
+        const listaOrdenada = [...listaParaExportar].sort((a, b) => a.inicioTimestamp - b.inicioTimestamp);
+        let csvContent = "\uFEFFColaborador;Setor;Subestação;Dias;Data de Início;Data de Término;Ano de Início;Status de Conflito\n";
+
+        listaOrdenada.forEach(f => {
+            const nomeLimpo = `"${(f.nome || '').replace(/"/g, '""')}"`;
+            const setorLimpo = `"${(f.setor || 'Não informado').replace(/"/g, '""')}"`;
+            const seLimpa = `"${(f.subestacao || 'Não informada').replace(/"/g, '""')}"`;
+            const anoInicio = new Date(f.inicioTimestamp).getFullYear();
+            const statusConflito = `"${verificarConflito(f, listaOrdenada)}"`;
+            
+            csvContent += `${nomeLimpo};${setorLimpo};${seLimpa};${f.dias};${f.inicioStr};${f.fimStr};${anoInicio};${statusConflito}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const anoRef = document.getElementById('anoSelecionado').value;
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `escala_ferias_manutel_${anoRef}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function imprimirRelatorio() {
+        window.print();
+    }
+
+    // ==========================================
+    // RENDERIZAÇÃO NA TELA
+    // ==========================================
     function renderFerias() {
         let ld = document.getElementById('listaFerias');
         ld.innerHTML = '';
-        if (!dbCache.ferias.length) {
-            ld.innerHTML = '<p style="color:#999;text-align:center">Nenhuma féria.</p>';
+        
+        const listaFiltrada = obterListaFiltrada();
+
+        if (!listaFiltrada.length) {
+            ld.innerHTML = '<p style="color:#999;text-align:center">Nenhuma féria encontrada para os filtros selecionados.</p>';
         } else {
-            dbCache.ferias.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
-                ld.innerHTML += `<div class="list-item"><div><strong>${f.nome}</strong> (${f.dias}d)<br><small>${f.inicioStr} até ${f.fimStr}</small></div><button onclick="removerFerias(${f.id})">✖</button></div>`;
+            listaFiltrada.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
+                const isEditing = f.id === editandoFeriasId ? 'editing' : '';
+                const setorTxt = f.setor || 'Sem Setor';
+                const seTxt = f.subestacao || 'Sem SE';
+                
+                ld.innerHTML += `
+                    <div class="list-item ${isEditing}">
+                        <div>
+                            <div class="colab-header">
+                                <strong>${f.nome}</strong>
+                                <span class="badge-meta badge-setor">${setorTxt}</span>
+                                <span class="badge-meta badge-se">${seTxt}</span>
+                            </div>
+                            <small>${f.inicioStr} até ${f.fimStr} <strong>(${f.dias} dias)</strong></small>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️ Editar</button>
+                            <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Remover">✖ Excluir</button>
+                        </div>
+                    </div>`;
             });
         }
         let c = document.getElementById('calendariosContainer');
         c.innerHTML = '';
-        gerarAno(parseInt(document.getElementById('anoSelecionado').value), dbCache.ferias, c);
+        gerarAno(parseInt(document.getElementById('anoSelecionado').value), listaFiltrada, c);
     }
 
     function gerarAno(ano, ferias, container) {
@@ -526,234 +619,25 @@
             let g = document.createElement('div');
             g.className = 'calendar-days';
             DIAS_SEMANA.forEach(d => g.innerHTML += `<div class="day-name">${d}</div>`);
+            
             let pds = new Date(ano, m, 1).getDay();
             for (let i = 0; i < pds; i++) g.innerHTML += '<div class="day-cell"></div>';
+            
             let qtd = new Date(ano, m + 1, 0).getDate();
             for (let d = 1; d <= qtd; d++) {
                 let dt = new Date(ano, m, d).getTime(),
                     ef = ferias.filter(f => dt >= f.inicioTimestamp && dt <= f.fimTimestamp),
                     cc = 'day-cell';
                 if (ef.length > 0) cc += ef.length > 1 ? ' overlap' : ' has-vacation';
-                let th = ef.map(f => `<div class="vacation-tag" title="${f.nome}">${f.nome.split(' ')[0]}</div>`).join('');
+                let th = ef.map(f => {
+                    const infoTooltip = `${f.nome} | ${f.setor || 'S/S'} | ${f.subestacao || 'S/SE'}`;
+                    return `<div class="vacation-tag" title="${infoTooltip}">${f.nome.split(' ')[0]}</div>`;
+                }).join('');
                 g.innerHTML += `<div class="${cc}"><div class="day-num">${d}</div>${th}</div>`;
             }
             box.appendChild(g);
             container.appendChild(box);
         }
-    }
-
-    // ==========================================
-    // ATIVIDADES
-    // ==========================================
-    let editandoAtvId = null;
-
-    function toggleTech(el) { el.classList.toggle('selected'); }
-    function getTecnicosSelected() { let s = []; document.querySelectorAll('.tech-btn.selected').forEach(b => s.push(b.dataset.tech)); return s; }
-    function setTecnicosSelected(arr) { document.querySelectorAll('.tech-btn').forEach(b => { if (arr.includes(b.dataset.tech)) b.classList.add('selected'); else b.classList.remove('selected'); }); }
-    
-    function calcularDiasAtv() {
-        let di = document.getElementById('aDataInicio').value, 
-            df = document.getElementById('aDataFim').value, 
-            el = document.getElementById('aDiasCalc');
-        if (di && df) {
-            let s = new Date(di + "T00:00:00"), e = new Date(df + "T00:00:00"), diff = Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
-            el.innerText = `Duração: ${diff} dia(s)`;
-        } else {
-            el.innerText = '';
-        }
-    }
-
-    function showErrorAtv(msg) { const el = document.getElementById('errorMsgAtv'); el.innerText = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 3000); }
-    
-    function validarStatusAutomatico(atv) {
-        if (atv.status === 'Concluída') return 'Concluída';
-        let hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-        let fim = new Date(atv.dataFim + "T00:00:00");
-        return fim < hoje ? 'Atrasada' : 'Em Andamento';
-    }
-
-    async function salvarAtividade() {
-        let titulo = document.getElementById('aTitulo').value.trim(), 
-            tecnicos = getTecnicosSelected(), 
-            di = document.getElementById('aDataInicio').value, 
-            df = document.getElementById('aDataFim').value, 
-            sm = document.getElementById('aStatus').value;
-        if (!titulo || !tecnicos.length || !di || !df) return showErrorAtv("Preencha título, técnicos e datas.");
-        if (new Date(df) < new Date(di)) return showErrorAtv("Data fim menor que início.");
-        
-        let dados = { titulo, tecnicos, dataInicio: di, dataFim: df, status: sm };
-        if (editandoAtvId) {
-            let idx = dbCache.atividades.findIndex(a => a.id === editandoAtvId);
-            if (idx !== -1) dbCache.atividades[idx] = { ...dbCache.atividades[idx], ...dados };
-            editandoAtvId = null;
-            document.getElementById('btnSalvarAtv').innerText = "Cadastrar Atividade";
-            document.getElementById('btnSalvarAtv').classList.remove('btn-edit-mode');
-            document.getElementById('btnCancelarEdit').style.display = 'none';
-            document.getElementById('tituloFormAtv').innerText = "Nova Atividade";
-        } else {
-            dbCache.atividades.push({ id: Date.now(), ...dados });
-        }
-        
-        document.getElementById('aTitulo').value = '';
-        setTecnicosSelected([]);
-        document.getElementById('aDataInicio').value = '';
-        document.getElementById('aDataFim').value = '';
-        document.getElementById('aStatus').value = 'Em Andamento';
-        document.getElementById('aDiasCalc').innerText = '';
-        await saveDB(); 
-        renderAtividades();
-    }
-
-    function editarAtividade(id) {
-        let atv = dbCache.atividades.find(a => a.id === id); 
-        if (!atv) return;
-        editandoAtvId = id; 
-        document.getElementById('aTitulo').value = atv.titulo; 
-        setTecnicosSelected(atv.tecnicos);
-        document.getElementById('aDataInicio').value = atv.dataInicio; 
-        document.getElementById('aDataFim').value = atv.dataFim;
-        document.getElementById('aStatus').value = atv.status === 'Atrasada' ? 'Em Andamento' : atv.status;
-        calcularDiasAtv();
-        document.getElementById('btnSalvarAtv').innerText = "Salvar Alterações";
-        document.getElementById('btnSalvarAtv').classList.add('btn-edit-mode');
-        document.getElementById('btnCancelarEdit').style.display = 'block';
-        document.getElementById('tituloFormAtv').innerText = "Editando Atividade";
-        document.getElementById('tituloFormAtv').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function cancelarEdicaoAtv() {
-        editandoAtvId = null;
-        document.getElementById('btnSalvarAtv').innerText = "Cadastrar Atividade";
-        document.getElementById('btnSalvarAtv').classList.remove('btn-edit-mode');
-        document.getElementById('btnCancelarEdit').style.display = 'none';
-        document.getElementById('tituloFormAtv').innerText = "Nova Atividade";
-        document.getElementById('aTitulo').value = '';
-        setTecnicosSelected([]);
-        document.getElementById('aDataInicio').value = '';
-        document.getElementById('aDataFim').value = '';
-        document.getElementById('aDiasCalc').innerText = '';
-    }
-
-    async function excluirAtividade(id) {
-        if (!confirm("Excluir esta atividade?")) return;
-        dbCache.atividades = dbCache.atividades.filter(a => a.id !== id);
-        await saveDB();
-        renderAtividades();
-    }
-
-    async function concluirAtividade(id) {
-        let idx = dbCache.atividades.findIndex(a => a.id === id);
-        if (idx !== -1) dbCache.atividades[idx].status = 'Concluída';
-        await saveDB();
-        renderAtividades();
-    }
-
-    function renderAtividades() {
-        let lista = dbCache.atividades;
-        let concluidas = 0, atrasadas = 0;
-        lista.forEach(atv => { 
-            atv.statusReal = validarStatusAutomatico(atv); 
-            if (atv.statusReal === 'Concluída') concluidas++; 
-            else if (atv.statusReal === 'Atrasada') atrasadas++; 
-        });
-        
-        document.getElementById('dashTotal').innerText = lista.length;
-        document.getElementById('dashAndamento').innerText = lista.length - concluidas - atrasadas;
-        document.getElementById('dashAtrasada').innerText = atrasadas;
-        document.getElementById('dashConcluida').innerText = concluidas;
-
-        let containerLista = document.getElementById('listaAtividades'); 
-        containerLista.innerHTML = '';
-        
-        if (!lista.length) {
-            containerLista.innerHTML = '<p style="text-align:center;color:#999;">Nenhuma atividade cadastrada.</p>';
-        } else {
-            let listaOrdenada = [...lista].sort((a, b) => {
-                let sa = a.statusReal === 'Concluída' ? 1 : 0, sb = b.statusReal === 'Concluída' ? 1 : 0;
-                if (sa !== sb) return sa - sb;
-                return new Date(a.dataInicio) - new Date(b.dataInicio);
-            });
-
-            listaOrdenada.forEach(atv => {
-                let di = new Date(atv.dataInicio + "T00:00:00"), df = new Date(atv.dataFim + "T00:00:00");
-                let dias = Math.ceil((df - di) / (1000 * 60 * 60 * 24)) + 1;
-                let classeCss = atv.statusReal === 'Atrasada' ? 'atrasada' : (atv.statusReal === 'Concluída' ? 'concluida' : 'andamento');
-                
-                let acoesHtml = '';
-                if (atv.statusReal !== 'Concluída') acoesHtml += `<button class="btn-action success" onclick="concluirAtividade(${atv.id})">Concluir</button>`;
-                acoesHtml += `<button class="btn-action warning" onclick="editarAtividade(${atv.id})">Editar</button>`;
-                acoesHtml += `<button class="btn-action danger" onclick="excluirAtividade(${atv.id})">Excluir</button>`;
-
-                containerLista.innerHTML += `
-                    <div class="atividade-list-item ${classeCss}">
-                        <div style="margin-bottom:10px;"><strong style="color:var(--primary); font-size:1.1em;">${atv.titulo}</strong> <span class="status-badge ${classeCss}">${atv.statusReal}</span></div>
-                        <div class="atv-info-grid">
-                            <div><strong>Início:</strong> ${di.toLocaleDateString('pt-BR')}</div>
-                            <div><strong>Fim:</strong> ${df.toLocaleDateString('pt-BR')}</div>
-                            <div><strong>Atribuído a:</strong> ${atv.tecnicos.join(', ')}</div>
-                            <div style="margin-top:5px; color:var(--primary);"><strong>Duração:</strong> ${dias} dia(s)</div>
-                        </div>
-                        <div class="atv-actions">${acoesHtml}</div>
-                    </div>`;
-            });
-        }
-        renderGantt(lista);
-    }
-
-    function renderGantt(lista) {
-        let area = document.getElementById('ganttChartArea');
-        let ativas = lista.filter(a => validarStatusAutomatico(a) !== 'Concluída').sort((a, b) => new Date(a.dataInicio) - new Date(b.dataInicio));
-        
-        if (!ativas.length) { 
-            area.innerHTML = '<p style="text-align:center; color:#999">Nenhuma atividade em aberto para o cronograma.</p>'; 
-            return; 
-        }
-
-        let minD = new Date(ativas[0].dataInicio + "T00:00:00");
-        let maxD = new Date(ativas[0].dataFim + "T00:00:00");
-        ativas.forEach(a => {
-            let s = new Date(a.dataInicio + "T00:00:00"), e = new Date(a.dataFim + "T00:00:00");
-            if (s < minD) minD = s; 
-            if (e > maxD) maxD = e;
-        });
-
-        let dias = [];
-        let current = new Date(minD);
-        while (current <= maxD) { 
-            dias.push(new Date(current)); 
-            current.setDate(current.getDate() + 1); 
-        }
-
-        let hojeStr = new Date().toDateString();
-
-        let html = '<table class="gantt-table"><thead><tr><th class="gantt-task-header">Atividade</th>';
-        dias.forEach(d => { 
-            html += `<th class="gantt-day-header">${d.getDate()}<br><span style="font-size:0.8em; font-weight:normal">${(d.getMonth() + 1).toString().padStart(2, '0')}</span></th>`; 
-        });
-        html += '</tr></thead><tbody>';
-
-        ativas.forEach(atv => {
-            let start = new Date(atv.dataInicio + "T00:00:00");
-            let end = new Date(atv.dataFim + "T00:00:00");
-            let status = validarStatusAutomatico(atv);
-            
-            html += `<tr><td class="gantt-task-name">${atv.titulo}</td>`;
-            dias.forEach(d => {
-                let isInRange = d >= start && d <= end;
-                let isToday = d.toDateString() === hojeStr;
-                let cls = 'gantt-cell';
-                if (isInRange) cls += status === 'Atrasada' ? ' gantt-active-atrasada' : ' gantt-active-andamento';
-                if (isToday) cls += ' gantt-today';
-                html += `<td class="${cls}"></td>`;
-            });
-            html += '</tr>';
-        });
-
-        html += '</tbody></table>';
-        area.innerHTML = html;
-        
-        let hojeCol = area.querySelector('.gantt-today');
-        if (hojeCol) hojeCol.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 </script>
 </body>
