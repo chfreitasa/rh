@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#183482">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Gestão de Férias - Regional Nordeste | Alupar</title>
+    <title>Gestão de Férias - Regional Nordeste</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
@@ -39,7 +39,7 @@
             border-bottom: 4px solid var(--alupar-green);
             padding: calc(14px + var(--safe-top)) 24px 14px;
             box-shadow: 0 4px 15px rgba(24, 52, 130, 0.2);
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
         .topbar-content {
             max-width: 1200px;
@@ -144,18 +144,18 @@
         /* FORMULÁRIOS GLOBAIS */
         .container-box {
             background: #fff;
-            padding: 25px;
+            padding: 22px 25px;
             border-radius: 14px;
             box-shadow: 0 6px 24px rgba(24, 52, 130, 0.08);
             border-top: 4px solid var(--alupar-blue);
-            margin-bottom: 28px;
+            margin-bottom: 20px;
         }
-        .form-title { margin-top: 0; margin-bottom: 18px; color: var(--alupar-blue); font-size: 1.2em; text-align: center; font-weight: 700; }
+        .form-title { margin-top: 0; margin-bottom: 16px; color: var(--alupar-blue); font-size: 1.15em; text-align: center; font-weight: 700; }
         .form-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9em; color: #4a5568; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.88em; color: #4a5568; }
         input[type="text"], input[type="password"], input[type="number"], input[type="date"], select {
-            flex: 1; height: 48px; margin: 0; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 9px;
-            font-size: 1em; background-color: #f8fafc; font-family: inherit; color: var(--text); width: 100%;
+            flex: 1; height: 46px; margin: 0; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 9px;
+            font-size: 0.98em; background-color: #f8fafc; font-family: inherit; color: var(--text); width: 100%;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         input:focus, select:focus {
@@ -165,9 +165,9 @@
             background-color: #fff;
         }
         button.main-btn {
-            display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 52px;
+            display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 50px;
             margin-top: 10px; background-color: var(--alupar-green); color: white; border: none; border-radius: 9px;
-            font-size: 1.1em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 var(--alupar-green-dark);
+            font-size: 1.08em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 var(--alupar-green-dark);
             transition: background-color 0.2s, transform 0.1s;
         }
         button.main-btn:hover { background-color: #28943b; }
@@ -175,27 +175,12 @@
         button.main-btn:disabled { background-color: #94a3b8; box-shadow: none; cursor: not-allowed; }
         button.main-btn.btn-edit-mode { background-color: var(--warning); box-shadow: 0 4px 0 #c66900; }
         .btn-cancel {
-            display: none; width: 100%; margin-top: 10px; padding: 12px; background-color: #fff;
-            color: var(--error); border: 2px solid var(--error); border-radius: 9px; font-size: 1em;
+            display: none; width: 100%; margin-top: 10px; padding: 11px; background-color: #fff;
+            color: var(--error); border: 2px solid var(--error); border-radius: 9px; font-size: 0.98em;
             font-weight: bold; cursor: pointer;
         }
         .btn-cancel:active { background-color: var(--error); color: #fff; }
-        .error-msg { color: var(--error); font-size: 0.9em; text-align: center; margin-top: 10px; min-height: 20px; font-weight: 600; }
-
-        /* BARRA DE EXPORTAÇÃO E IMPRESSÃO */
-        .export-toolbar {
-            display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
-            margin-top: 20px; padding-top: 18px; border-top: 1px solid #e2e8f0;
-        }
-        .btn-export {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 11px 18px; border-radius: 8px; font-weight: bold; font-size: 0.95em;
-            cursor: pointer; border: none; transition: 0.2s; color: #fff; flex: 1; min-width: 180px;
-        }
-        .btn-export.csv { background-color: var(--alupar-green); box-shadow: 0 3px 0 var(--alupar-green-dark); }
-        .btn-export.csv:active { transform: translateY(3px); box-shadow: none; }
-        .btn-export.print { background-color: var(--alupar-blue); box-shadow: 0 3px 0 var(--alupar-blue-dark); }
-        .btn-export.print:active { transform: translateY(3px); box-shadow: none; }
+        .error-msg { color: var(--error); font-size: 0.9em; text-align: center; margin-top: 8px; min-height: 18px; font-weight: 600; }
 
         /* GRADE DO FORMULÁRIO DE FÉRIAS (5 CAMPOS) */
         .ferias-form-grid {
@@ -205,46 +190,125 @@
             align-items: end;
         }
 
+        /* BARRA DE FILTROS FIXA (STICKY) - SEMPRE VISÍVEL MESMO COM 500+ PESSOAS */
+        .filter-bar-sticky {
+            position: sticky;
+            top: 10px;
+            z-index: 95;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 14px 18px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(24, 52, 130, 0.14);
+            border: 1.5px solid #cbd5e1;
+            border-left: 6px solid var(--alupar-blue);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1.6fr 1fr 1.2fr 1.2fr auto;
+            gap: 12px;
+            align-items: center;
+        }
+        .filter-item { display: flex; flex-direction: column; gap: 4px; }
+        .filter-item label { margin: 0; font-size: 0.78em; color: var(--alupar-blue); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .filter-item select, .filter-item input { height: 40px; font-weight: 600; font-size: 0.92em; padding: 0 10px; }
+        .btn-clear-filters {
+            height: 40px;
+            margin-top: 18px;
+            padding: 0 14px;
+            background: var(--alupar-blue-light);
+            color: var(--alupar-blue);
+            border: 1px solid #c5d4eb;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85em;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .btn-clear-filters:hover { background: var(--alupar-blue); color: #fff; }
+
+        /* CABEÇALHO E CAIXA COM ROLAGEM PARA A LISTA DE FÉRIAS */
+        .list-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .list-header-title {
+            font-size: 1.05em;
+            font-weight: 700;
+            color: var(--alupar-blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .count-badge {
+            background: var(--alupar-blue);
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+        .lista-scroll-box {
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .lista-scroll-box::-webkit-scrollbar { width: 7px; }
+        .lista-scroll-box::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .lista-scroll-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .lista-scroll-box::-webkit-scrollbar-thumb:hover { background: var(--alupar-blue); }
+
         /* LISTAGEM E ETIQUETAS (BADGES) */
         .list-item {
             display: flex; justify-content: space-between; align-items: center;
-            background: #f8fafc; padding: 12px 15px; margin-bottom: 8px;
+            background: #f8fafc; padding: 10px 14px; margin-bottom: 8px;
             border-radius: 8px; border: 1px solid #e2e8f0; border-left: 5px solid var(--alupar-green);
             transition: 0.2s;
         }
         .list-item:hover { background: #f1f5f9; }
         .list-item.editing { border-left-color: var(--warning); background: #fff8e1; }
-        .colab-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
-        .colab-header strong { color: var(--alupar-blue); font-size: 1.02em; }
+        .colab-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+        .colab-header strong { color: var(--alupar-blue); font-size: 1em; }
         .badge-meta {
             display: inline-block; padding: 2px 8px; border-radius: 5px;
-            font-size: 0.73em; font-weight: 700; letter-spacing: 0.4px;
+            font-size: 0.72em; font-weight: 700; letter-spacing: 0.4px;
         }
         .badge-setor { background: var(--alupar-green-light); color: var(--alupar-green-dark); border: 1px solid #b7e4c0; }
         .badge-se { background: var(--alupar-blue-light); color: var(--alupar-blue); border: 1px solid #c5d4eb; }
 
         .item-actions { display: flex; gap: 8px; align-items: center; }
         .btn-icon {
-            border: none; width: 38px; height: 38px; border-radius: 8px;
-            font-weight: bold; font-size: 1.15em; cursor: pointer;
+            border: none; width: 36px; height: 36px; border-radius: 8px;
+            font-weight: bold; font-size: 1.1em; cursor: pointer;
             display: inline-flex; align-items: center; justify-content: center;
             transition: transform 0.15s, background-color 0.15s;
         }
         .btn-icon.edit { background: #fff3e0; color: var(--warning); border: 1px solid #ffe0b2; }
         .btn-icon.edit:active { background: var(--warning); color: #fff; transform: scale(0.94); }
-        .btn-icon.delete { background: #ffebee; color: var(--error); border: 1px solid #ffcdd2; font-size: 1.25em; }
+        .btn-icon.delete { background: #ffebee; color: var(--error); border: 1px solid #ffcdd2; font-size: 1.2em; }
         .btn-icon.delete:active { background: var(--error); color: #fff; transform: scale(0.94); }
 
-        /* BARRA DE FILTROS DO CALENDÁRIO */
-        .filter-bar-container {
-            display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;
-            margin-bottom: 25px; background: #fff; padding: 15px 20px; border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(24, 52, 130, 0.06);
-            border: 1px solid #e2e8f0;
+        /* BARRA DE EXPORTAÇÃO E IMPRESSÃO */
+        .export-toolbar {
+            display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
+            margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0;
         }
-        .filter-item { display: flex; align-items: center; gap: 8px; }
-        .filter-item label { margin: 0; white-space: nowrap; font-size: 0.9em; color: var(--alupar-blue); font-weight: 700; }
-        .filter-item select { height: 42px; min-width: 145px; font-weight: 600; font-size: 0.95em; padding: 0 10px; }
+        .btn-export {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 0.92em;
+            cursor: pointer; border: none; transition: 0.2s; color: #fff; flex: 1; min-width: 180px;
+        }
+        .btn-export.csv { background-color: var(--alupar-green); box-shadow: 0 3px 0 var(--alupar-green-dark); }
+        .btn-export.csv:active { transform: translateY(3px); box-shadow: none; }
+        .btn-export.print { background-color: var(--alupar-blue); box-shadow: 0 3px 0 var(--alupar-blue-dark); }
+        .btn-export.print:active { transform: translateY(3px); box-shadow: none; }
 
         /* CALENDÁRIOS COM IDENTIDADE ALUPAR */
         .calendars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
@@ -272,8 +336,10 @@
         }
         .day-cell.overlap .vacation-tag { background: var(--error); }
 
-        @media (max-width: 900px) {
+        @media (max-width: 950px) {
             .ferias-form-grid { grid-template-columns: 1fr 1fr; }
+            .filter-bar-sticky { grid-template-columns: 1fr 1fr; }
+            .btn-clear-filters { margin-top: 0; grid-column: span 2; }
         }
 
         @media (max-width: 600px) {
@@ -281,9 +347,15 @@
             .brand-divider { display: none; }
             .page-title { font-size: 1.05em; width: 100%; }
             .ferias-form-grid { grid-template-columns: 1fr; }
-            .filter-bar-container { flex-direction: column; align-items: stretch; gap: 10px; }
-            .filter-item { justify-content: space-between; }
-            .filter-item select { flex: 1; }
+            .filter-bar-sticky {
+                position: relative;
+                top: 0;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                padding: 12px;
+            }
+            .filter-item.busca-full { grid-column: span 2; }
+            .btn-clear-filters { grid-column: span 2; height: 38px; }
             .day-cell { min-height: 52px; font-size: 0.75em; }
             .export-toolbar { flex-direction: column; }
         }
@@ -293,11 +365,12 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             body { background: #fff !important; padding: 0 !important; display: block !important; }
             .app-container { max-width: 100% !important; width: 100% !important; }
-            #page-login, .btn-logout, #blocoInputsFerias, .item-actions, .export-toolbar { display: none !important; }
+            #page-login, .btn-logout, #boxFormCadastro, .item-actions, .export-toolbar, .btn-clear-filters, .busca-full { display: none !important; }
             .alupar-topbar { margin-bottom: 15px !important; padding: 10px 20px !important; }
+            .filter-bar-sticky { position: static !important; box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 15px !important; grid-template-columns: repeat(3, 1fr) !important; }
+            .filter-item select { border: none !important; background: transparent !important; appearance: none; -webkit-appearance: none; font-weight: bold; padding: 0; height: auto; }
             .container-box { box-shadow: none !important; border: 1px solid #ccc !important; padding: 15px !important; margin-bottom: 20px !important; }
-            .filter-bar-container { box-shadow: none !important; border: 1px solid #eee !important; padding: 8px !important; margin-bottom: 15px !important; }
-            .filter-item select { border: none !important; background: transparent !important; appearance: none; -webkit-appearance: none; font-weight: bold; padding: 0; }
+            .lista-scroll-box { max-height: none !important; overflow: visible !important; }
             .calendars-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 12px !important; }
             .calendar-box { break-inside: avoid; page-break-inside: avoid; }
             .day-cell { min-height: 45px !important; }
@@ -343,63 +416,60 @@
     </header>
 
     <div class="app-container">
-        <div class="container-box" id="boxFormFerias">
-            <div id="blocoInputsFerias">
-                <h2 class="form-title" id="tituloFormFerias">Cadastrar Período de Férias</h2>
-                <div class="ferias-form-grid">
-                    <div class="form-group" style="margin:0">
-                        <label>Colaborador</label>
-                        <input type="text" id="fColab" placeholder="Nome do colaborador">
-                    </div>
-                    <div class="form-group" style="margin:0">
-                        <label>Setor / Equipe</label>
-                        <select id="fSetor">
-                            <option value="TELECOM">TELECOM</option>
-                            <option value="SPCS">SPCS</option>
-                            <option value="OPERAÇÃO">OPERAÇÃO</option>
-                            <option value="EAT">EAT</option>
-                            <option value="LT">LT</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin:0">
-                        <label>Subestação</label>
-                        <select id="fSubestacao">
-                            <option value="SE JZT">SE JZT</option>
-                            <option value="SE GOR">SE GOR</option>
-                            <option value="SE OUR">SE OUR</option>
-                            <option value="SE BJD">SE BJD</option>
-                            <option value="SE SDS">SE SDS</option>
-                            <option value="SE RDE">SE RDE</option>
-                            <option value="SE RGD">SE RGD</option>
-                            <option value="SE JCT">SE JCT</option>
-                            <option value="SE JCD">SE JCD</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin:0">
-                        <label>Dias</label>
-                        <input type="number" id="fDias" min="1" max="30" placeholder="Ex: 15">
-                    </div>
-                    <div class="form-group" style="margin:0">
-                        <label>Início</label>
-                        <input type="date" id="fInicio" value="2026-01-05">
-                    </div>
+        <!-- 1. FORMULÁRIO DE CADASTRO / EDIÇÃO -->
+        <div class="container-box" id="boxFormCadastro">
+            <h2 class="form-title" id="tituloFormFerias">Cadastrar Período de Férias</h2>
+            <div class="ferias-form-grid">
+                <div class="form-group" style="margin:0">
+                    <label>Colaborador</label>
+                    <input type="text" id="fColab" placeholder="Nome do colaborador">
                 </div>
-                <div class="error-msg" id="errorMsgFerias"></div>
-                <button class="main-btn" id="btnSalvarFerias" style="margin-top:15px;" onclick="salvarFerias()">Adicionar Férias</button>
-                <button class="btn-cancel" id="btnCancelarFerias" onclick="cancelarEdicaoFerias()">Cancelar Edição</button>
+                <div class="form-group" style="margin:0">
+                    <label>Setor / Equipe</label>
+                    <select id="fSetor">
+                        <option value="TELECOM">TELECOM</option>
+                        <option value="SPCS">SPCS</option>
+                        <option value="OPERAÇÃO">OPERAÇÃO</option>
+                        <option value="EAT">EAT</option>
+                        <option value="LT">LT</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label>Subestação</label>
+                    <select id="fSubestacao">
+                        <option value="SE JZT">SE JZT</option>
+                        <option value="SE GOR">SE GOR</option>
+                        <option value="SE OUR">SE OUR</option>
+                        <option value="SE BJD">SE BJD</option>
+                        <option value="SE SDS">SE SDS</option>
+                        <option value="SE RDE">SE RDE</option>
+                        <option value="SE RGD">SE RGD</option>
+                        <option value="SE JCT">SE JCT</option>
+                        <option value="SE JCD">SE JCD</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label>Dias</label>
+                    <input type="number" id="fDias" min="1" max="30" placeholder="Ex: 15">
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label>Início</label>
+                    <input type="date" id="fInicio" value="2026-01-05">
+                </div>
             </div>
-            
-            <div id="listaFerias" style="margin-top: 25px;"></div>
-
-            <div class="export-toolbar">
-                <button class="btn-export csv" onclick="exportarCSV()">📊 Exportar Excel (CSV)</button>
-                <button class="btn-export print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
-            </div>
+            <div class="error-msg" id="errorMsgFerias"></div>
+            <button class="main-btn" id="btnSalvarFerias" style="margin-top:12px;" onclick="salvarFerias()">Adicionar Férias</button>
+            <button class="btn-cancel" id="btnCancelarFerias" onclick="cancelarEdicaoFerias()">Cancelar Edição</button>
         </div>
 
-        <div class="filter-bar-container">
+        <!-- 2. BARRA DE FILTROS FIXA NO TOPO (SEMPRE VISÍVEL MESMO ROLANDO A PÁGINA) -->
+        <div class="filter-bar-sticky">
+            <div class="filter-item busca-full">
+                <label for="filtroBusca">🔍 Buscar Colaborador</label>
+                <input type="text" id="filtroBusca" placeholder="Digite um nome..." oninput="renderFerias()">
+            </div>
             <div class="filter-item">
-                <label for="anoSelecionado">📅 Ano:</label>
+                <label for="anoSelecionado">📅 Ano</label>
                 <select id="anoSelecionado" onchange="renderFerias()">
                     <option value="2025">2025</option>
                     <option value="2026" selected>2026</option>
@@ -408,7 +478,7 @@
                 </select>
             </div>
             <div class="filter-item">
-                <label for="filtroSetor">🛠️ Setor:</label>
+                <label for="filtroSetor">🛠️ Setor</label>
                 <select id="filtroSetor" onchange="renderFerias()">
                     <option value="TODOS">Todos os Setores</option>
                     <option value="TELECOM">TELECOM</option>
@@ -419,7 +489,7 @@
                 </select>
             </div>
             <div class="filter-item">
-                <label for="filtroSubestacao">⚡ Subestação:</label>
+                <label for="filtroSubestacao">⚡ Subestação</label>
                 <select id="filtroSubestacao" onchange="renderFerias()">
                     <option value="TODAS">Todas as SEs</option>
                     <option value="SE JZT">SE JZT</option>
@@ -433,8 +503,27 @@
                     <option value="SE JCD">SE JCD</option>
                 </select>
             </div>
+            <button class="btn-clear-filters" onclick="limparFiltros()" title="Resetar todos os filtros">Limpar Filtros</button>
         </div>
 
+        <!-- 3. LISTA DE COLABORADORES COM ROLAGEM INTERNA (SUPORTA 500+ REGISTROS SEM ESTICAR A PÁGINA) -->
+        <div class="container-box">
+            <div class="list-header-bar">
+                <div class="list-header-title">
+                    📋 Colaboradores Programados
+                    <span class="count-badge" id="contadorRegistros">0</span>
+                </div>
+            </div>
+
+            <div class="lista-scroll-box" id="listaFerias"></div>
+
+            <div class="export-toolbar">
+                <button class="btn-export csv" onclick="exportarCSV()">📊 Exportar Excel (CSV)</button>
+                <button class="btn-export print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
+            </div>
+        </div>
+
+        <!-- 4. CALENDÁRIO ANUAL -->
         <div class="calendars-grid" id="calendariosContainer"></div>
     </div>
 </div>
@@ -577,7 +666,7 @@
     window.addEventListener('load', navigate);
 
     // ==========================================
-    // GESTÃO DE FÉRIAS (CADASTRO E EDIÇÃO)
+    // GESTÃO DE FÉRIAS (CADASTRO, FILTRO E EDIÇÃO)
     // ==========================================
     const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     const DIAS_SEMANA = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -601,14 +690,28 @@
     }
 
     function obterListaFiltrada() {
+        const buscaTxt = (document.getElementById('filtroBusca').value || '').toLowerCase().trim();
         const setorSel = document.getElementById('filtroSetor').value;
         const seSel = document.getElementById('filtroSubestacao').value;
+        const anoSel = parseInt(document.getElementById('anoSelecionado').value);
+
+        const inicioAnoTs = new Date(anoSel, 0, 1).getTime();
+        const fimAnoTs = new Date(anoSel, 11, 31, 23, 59, 59).getTime();
 
         return dbCache.ferias.filter(f => {
+            const matchNome = !buscaTxt || (f.nome || '').toLowerCase().includes(buscaTxt);
             const matchSetor = setorSel === 'TODOS' || (f.setor || 'NÃO INFORMADO') === setorSel;
             const matchSE = seSel === 'TODAS' || (f.subestacao || 'NÃO INFORMADA') === seSel;
-            return matchSetor && matchSE;
+            const matchAno = f.inicioTimestamp <= fimAnoTs && f.fimTimestamp >= inicioAnoTs;
+            return matchNome && matchSetor && matchSE && matchAno;
         });
+    }
+
+    function limparFiltros() {
+        document.getElementById('filtroBusca').value = '';
+        document.getElementById('filtroSetor').value = 'TODOS';
+        document.getElementById('filtroSubestacao').value = 'TODAS';
+        renderFerias();
     }
     
     async function salvarFerias() {
@@ -649,6 +752,13 @@
             document.getElementById('fColab').value = '';
             document.getElementById('fDias').value = '';
         }
+
+        // Sincroniza o seletor de ano automaticamente para o ano recém-cadastrado
+        const anoCadastrado = String(idDate.getFullYear());
+        const selectAno = document.getElementById('anoSelecionado');
+        if ([...selectAno.options].some(o => o.value === anoCadastrado)) {
+            selectAno.value = anoCadastrado;
+        }
         
         await saveDB();
         renderFerias();
@@ -672,7 +782,7 @@
         document.getElementById('btnCancelarFerias').style.display = 'block';
 
         renderFerias();
-        document.getElementById('boxFormFerias').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('boxFormCadastro').scrollIntoView({ behavior: 'smooth' });
     }
 
     function cancelarEdicaoFerias() {
@@ -756,9 +866,10 @@
         ld.innerHTML = '';
         
         const listaFiltrada = obterListaFiltrada();
+        document.getElementById('contadorRegistros').innerText = `${listaFiltrada.length} registro(s)`;
 
         if (!listaFiltrada.length) {
-            ld.innerHTML = '<p style="color:#94a3b8;text-align:center">Nenhuma féria encontrada para os filtros selecionados.</p>';
+            ld.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:15px 0;">Nenhuma féria encontrada para os filtros selecionados.</p>';
         } else {
             listaFiltrada.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
                 const isEditing = f.id === editandoFeriasId ? 'editing' : '';
