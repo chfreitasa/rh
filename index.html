@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#183482">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Gestão de Férias - Regional Nordeste</title>
+    <!-- FAVICON COM A LETRA 'A' MAIÚSCULA AZUL NA IDENTIDADE ALUPAR -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ffffff' stroke='%23183482' stroke-width='4'/%3E%3Crect x='14' y='8' width='36' height='6' rx='3' fill='%232ea843'/%3E%3Ctext x='32' y='52' font-family='Segoe UI, Arial, sans-serif' font-size='44' font-weight='900' fill='%23183482' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
     <style>
         *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
@@ -48,6 +50,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 15px;
+            flex-wrap: wrap;
         }
         .brand-group {
             display: flex;
@@ -96,31 +99,108 @@
             font-weight: 600;
             letter-spacing: 0.2px;
         }
+        .user-session-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .operator-badge {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .operator-badge.is-admin {
+            background: rgba(46, 168, 67, 0.28);
+            border-color: var(--alupar-green);
+        }
+        .btn-top-action {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            color: #ffffff;
+            padding: 7px 13px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.86em;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .btn-top-action:hover { background: rgba(255, 255, 255, 0.24); border-color: #fff; }
+        .btn-top-action:active { transform: scale(0.96); }
         .btn-logout {
             background: rgba(255, 255, 255, 0.1);
             border: 1.5px solid rgba(255, 255, 255, 0.4);
             color: #ffffff;
-            padding: 8px 16px;
+            padding: 7px 14px;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            font-size: 0.9em;
+            font-size: 0.86em;
             transition: 0.2s;
             white-space: nowrap;
         }
         .btn-logout:hover { background: var(--error); border-color: var(--error); }
         .btn-logout:active { transform: scale(0.96); }
 
+        /* BANNER DE NOTIFICAÇÃO DE SOLICITAÇÕES PENDENTES (PARA ADMINS) */
+        .pending-requests-banner {
+            display: none;
+            background: #fff8e1;
+            border: 1.5px solid #ffb300;
+            border-left: 6px solid var(--warning);
+            color: #7c4000;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 14px rgba(245, 124, 0, 0.12);
+        }
+        .pending-requests-banner button {
+            background: var(--warning);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: 0.2s;
+        }
+        .pending-requests-banner button:hover { background: #e65100; }
+
+        /* ALERTA INTERNO DO MODAL DE TROCA OBRIGATÓRIA */
+        .mandatory-alert-box {
+            display: none;
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-left: 5px solid var(--warning);
+            color: #8d4004;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.88em;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
         .app-container { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 15px; }
         .page { display: none; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
         
-        /* LOGIN */
-        .login-wrapper { padding: 40px 15px; }
+        /* LOGIN E AUTO-CADASTRO */
+        .login-wrapper { padding: 35px 15px; }
         .login-container {
             background: #fff;
-            max-width: 400px;
-            margin: 20px auto 0;
+            max-width: 430px;
+            margin: 10px auto 0;
             border-radius: 16px;
             box-shadow: 0 12px 35px rgba(24, 52, 130, 0.15);
             width: 100%;
@@ -129,7 +209,7 @@
         .login-banner {
             background: var(--alupar-blue);
             border-bottom: 4px solid var(--alupar-green);
-            padding: 28px 20px;
+            padding: 26px 20px;
             text-align: center;
         }
         .login-banner p {
@@ -138,8 +218,34 @@
             font-size: 0.9em;
             font-weight: 500;
         }
-        .login-body { padding: 30px; }
-        .login-body h2 { text-align: center; color: var(--alupar-blue); margin-top: 0; margin-bottom: 22px; font-size: 1.35em; }
+        .login-body { padding: 28px 30px; }
+        .login-body h2 { text-align: center; color: var(--alupar-blue); margin-top: 0; margin-bottom: 20px; font-size: 1.3em; }
+        .btn-switch-auth {
+            display: block;
+            width: 100%;
+            margin-top: 14px;
+            padding: 11px;
+            background: var(--alupar-blue-light);
+            color: var(--alupar-blue);
+            border: 1.5px solid #c5d4eb;
+            border-radius: 9px;
+            font-size: 0.95em;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .btn-switch-auth:hover { background: var(--alupar-blue); color: #fff; }
+        .info-hint-box {
+            background: #f1f5f9;
+            border-left: 4px solid var(--alupar-blue);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.82em;
+            color: #475569;
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
 
         /* FORMULÁRIOS GLOBAIS */
         .container-box {
@@ -151,7 +257,7 @@
             margin-bottom: 20px;
         }
         .form-title { margin-top: 0; margin-bottom: 16px; color: var(--alupar-blue); font-size: 1.15em; text-align: center; font-weight: 700; }
-        .form-group { margin-bottom: 18px; }
+        .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.88em; color: #4a5568; }
         input[type="text"], input[type="password"], input[type="number"], input[type="date"], select {
             flex: 1; height: 46px; margin: 0; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 9px;
@@ -164,6 +270,16 @@
             box-shadow: 0 0 0 3px rgba(24, 52, 130, 0.12);
             background-color: #fff;
         }
+        /* ESTILO DOS CAMPOS TRAVADOS (SETOR E SUBESTAÇÃO PARA USUÁRIO COMUM) */
+        select:disabled, input:disabled {
+            background-color: #e2e8f0 !important;
+            color: #334155 !important;
+            border-color: #cbd5e1 !important;
+            font-weight: 700;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
         button.main-btn {
             display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 50px;
             margin-top: 10px; background-color: var(--alupar-green); color: white; border: none; border-radius: 9px;
@@ -181,16 +297,24 @@
         }
         .btn-cancel:active { background-color: var(--error); color: #fff; }
         .error-msg { color: var(--error); font-size: 0.9em; text-align: center; margin-top: 8px; min-height: 18px; font-weight: 600; }
+        .success-msg { color: var(--alupar-green-dark); font-size: 0.9em; text-align: center; margin-top: 8px; font-weight: 700; line-height: 1.4; }
 
-        /* GRADE DO FORMULÁRIO DE FÉRIAS (5 CAMPOS) */
+        /* GRADE DO FORMULÁRIO DE FÉRIAS (4 COLUNAS PADRÃO / 5 COLUNAS MODO ADMIN) */
         .ferias-form-grid {
             display: grid;
-            grid-template-columns: 2fr 1.4fr 1.1fr 0.8fr 1.3fr;
-            gap: 12px;
+            grid-template-columns: 1.5fr 1.3fr 0.9fr 1.3fr;
+            gap: 14px;
             align-items: end;
         }
+        .ferias-form-grid.admin-mode {
+            grid-template-columns: 1.8fr 1.3fr 1.1fr 0.8fr 1.2fr;
+        }
+        .custom-colab-wrapper {
+            display: none;
+            margin-top: 12px;
+        }
 
-        /* BARRA DE FILTROS FIXA (STICKY) - SEMPRE VISÍVEL MESMO COM 500+ PESSOAS */
+        /* BARRA DE FILTROS FIXA (STICKY) */
         .filter-bar-sticky {
             position: sticky;
             top: 10px;
@@ -265,7 +389,7 @@
         .lista-scroll-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
         .lista-scroll-box::-webkit-scrollbar-thumb:hover { background: var(--alupar-blue); }
 
-        /* LISTAGEM E ETIQUETAS (BADGES) */
+        /* LISTAGEM, ETIQUETAS E RASTREABILIDADE */
         .list-item {
             display: flex; justify-content: space-between; align-items: center;
             background: #f8fafc; padding: 10px 14px; margin-bottom: 8px;
@@ -282,6 +406,12 @@
         }
         .badge-setor { background: var(--alupar-green-light); color: var(--alupar-green-dark); border: 1px solid #b7e4c0; }
         .badge-se { background: var(--alupar-blue-light); color: var(--alupar-blue); border: 1px solid #c5d4eb; }
+        .audit-meta-line {
+            display: block;
+            font-size: 0.74em;
+            color: #64748b;
+            margin-top: 4px;
+        }
 
         .item-actions { display: flex; gap: 8px; align-items: center; }
         .btn-icon {
@@ -294,21 +424,271 @@
         .btn-icon.edit:active { background: var(--warning); color: #fff; transform: scale(0.94); }
         .btn-icon.delete { background: #ffebee; color: var(--error); border: 1px solid #ffcdd2; font-size: 1.2em; }
         .btn-icon.delete:active { background: var(--error); color: #fff; transform: scale(0.94); }
+        .btn-icon.locked {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
+            cursor: not-allowed;
+            font-size: 1em;
+        }
 
-        /* BARRA DE EXPORTAÇÃO E IMPRESSÃO */
+        /* BARRA DE EXPORTAÇÃO, AUDITORIA, USUÁRIOS E IMPRESSÃO (EXCLUSIVA ADMIN) */
         .export-toolbar {
-            display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
+            display: none; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
             margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0;
         }
         .btn-export {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 0.92em;
-            cursor: pointer; border: none; transition: 0.2s; color: #fff; flex: 1; min-width: 180px;
+            padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 0.9em;
+            cursor: pointer; border: none; transition: 0.2s; color: #fff; flex: 1; min-width: 165px;
         }
         .btn-export.csv { background-color: var(--alupar-green); box-shadow: 0 3px 0 var(--alupar-green-dark); }
         .btn-export.csv:active { transform: translateY(3px); box-shadow: none; }
         .btn-export.print { background-color: var(--alupar-blue); box-shadow: 0 3px 0 var(--alupar-blue-dark); }
         .btn-export.print:active { transform: translateY(3px); box-shadow: none; }
+        .btn-export.audit { background-color: #475569; box-shadow: 0 3px 0 #1e293b; }
+        .btn-export.audit:active { transform: translateY(3px); box-shadow: none; }
+        .btn-export.users { background-color: #0284c7; box-shadow: 0 3px 0 #0369a1; }
+        .btn-export.users:active { transform: translateY(3px); box-shadow: none; }
+        .pill-notif {
+            background: var(--warning);
+            color: #fff;
+            padding: 1px 7px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 800;
+        }
+
+        /* MODAIS (AUDITORIA, GESTÃO DE USUÁRIOS E ALTERAR SENHA) */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15, 35, 89, 0.72);
+            z-index: 200; align-items: center; justify-content: center; padding: 15px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card {
+            background: #fff; width: 100%; max-width: 860px; border-radius: 14px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3); overflow: hidden;
+            display: flex; flex-direction: column; max-height: 88vh;
+        }
+        .modal-header {
+            background: var(--alupar-blue); border-bottom: 3px solid var(--alupar-green);
+            color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { margin: 0; font-size: 1.1em; }
+        .btn-close-modal {
+            background: none; border: none; color: #fff; font-size: 1.4em; cursor: pointer; line-height: 1;
+        }
+        .modal-body { padding: 18px; overflow-y: auto; flex: 1; }
+        .log-item {
+            padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 0.88em;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .log-badge {
+            padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75em; color: #fff;
+        }
+        .log-badge.CADASTRO, .log-badge.APROVAÇÃO { background: var(--alupar-green); }
+        .log-badge.EDIÇÃO, .log-badge.SOLICITAÇÃO { background: var(--warning); }
+        .log-badge.EXCLUSÃO, .log-badge.RECUSA { background: var(--error); }
+        .log-badge.USUÁRIO, .log-badge.SENHA { background: var(--alupar-blue); }
+        .log-footer {
+            padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* SEÇÃO DE SOLICITAÇÕES PENDENTES DENTRO DO MODAL DE USUÁRIOS */
+        .pending-section-box {
+            display: none;
+            background: #fff8e1;
+            border: 1.5px solid #ffe082;
+            border-left: 5px solid var(--warning);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+        .pending-section-title {
+            margin: 0 0 10px 0;
+            font-size: 0.95em;
+            color: #b45309;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pending-card {
+            background: #fff;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pending-card:last-child { margin-bottom: 0; }
+        .btn-approve {
+            background: var(--alupar-green);
+            color: #fff;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.82em;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-approve:hover { background: var(--alupar-green-dark); }
+        .btn-reject {
+            background: #ffebee;
+            color: var(--error);
+            border: 1px solid #ffcdd2;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.82em;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-reject:hover { background: var(--error); color: #fff; }
+
+        /* ESTILOS INTERNOS DO MODAL DE USUÁRIOS (COM LOTAÇÃO E SENHA) */
+        .user-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+        .master-role-check {
+            grid-column: 1 / -1;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding-top: 6px;
+            font-size: 0.9em;
+            color: var(--alupar-blue);
+            font-weight: 700;
+        }
+        .master-role-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .user-row {
+            display: flex;
+            flex-direction: column;
+            padding: 12px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            margin-bottom: 9px;
+            background: #fff;
+            gap: 8px;
+        }
+        .user-row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .user-master-pass-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 7px;
+            border: 1px dashed #cbd5e1;
+            flex-wrap: wrap;
+        }
+        .pass-current-view {
+            font-size: 0.84em;
+            color: #334155;
+        }
+        .pass-current-view code {
+            background: #fff;
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            color: var(--alupar-blue);
+            font-weight: 700;
+            font-size: 1.05em;
+        }
+        .master-pass-edit-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .master-pass-edit-group input, .master-pass-edit-group select {
+            height: 35px;
+            font-size: 0.84em;
+            padding: 0 8px;
+            border-radius: 6px;
+            width: auto;
+        }
+        .master-pass-edit-group .inp-nome-master { min-width: 155px; flex: 1; }
+        .master-pass-edit-group .inp-lot-master { width: 112px; }
+        .master-pass-edit-group .inp-senha-master { width: 115px; }
+        .btn-save-pass-master {
+            background: var(--alupar-green);
+            color: #fff;
+            border: none;
+            height: 35px;
+            padding: 0 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .btn-save-pass-master:hover { background: var(--alupar-green-dark); }
+
+        .role-pill {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.72em;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .role-pill.master { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .role-pill.admin { background: var(--alupar-green-light); color: var(--alupar-green-dark); border: 1px solid #b7e4c0; }
+        .role-pill.user { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .status-pass-pill {
+            font-size: 0.7em;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        .status-pass-pill.pending { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+        .status-pass-pill.ok { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+
+        .btn-role-toggle {
+            border: 1px solid var(--alupar-blue);
+            background: var(--alupar-blue-light);
+            color: var(--alupar-blue);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.78em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-role-toggle:hover { background: var(--alupar-blue); color: #fff; }
 
         /* CALENDÁRIOS COM IDENTIDADE ALUPAR */
         .calendars-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 20px; }
@@ -337,7 +717,8 @@
         .day-cell.overlap .vacation-tag { background: var(--error); }
 
         @media (max-width: 950px) {
-            .ferias-form-grid { grid-template-columns: 1fr 1fr; }
+            .ferias-form-grid, .ferias-form-grid.admin-mode { grid-template-columns: 1fr 1fr; }
+            .user-form-grid { grid-template-columns: 1fr 1fr; }
             .filter-bar-sticky { grid-template-columns: 1fr 1fr; }
             .btn-clear-filters { margin-top: 0; grid-column: span 2; }
         }
@@ -346,7 +727,7 @@
             .alupar-topbar { padding: calc(12px + var(--safe-top)) 15px 12px; }
             .brand-divider { display: none; }
             .page-title { font-size: 1.05em; width: 100%; }
-            .ferias-form-grid { grid-template-columns: 1fr; }
+            .ferias-form-grid, .ferias-form-grid.admin-mode, .user-form-grid { grid-template-columns: 1fr; }
             .filter-bar-sticky {
                 position: relative;
                 top: 0;
@@ -358,14 +739,31 @@
             .btn-clear-filters { grid-column: span 2; height: 38px; }
             .day-cell { min-height: 52px; font-size: 0.75em; }
             .export-toolbar { flex-direction: column; }
+            .master-pass-edit-group { width: 100%; justify-content: stretch; }
+            .master-pass-edit-group input, .master-pass-edit-group select { flex: 1; width: 100%; }
         }
 
-        /* ESTILOS DE IMPRESSÃO / PDF */
+        /* ESTILOS DE IMPRESSÃO / PDF (COM BLOQUEIO PARA USUÁRIOS COMUNS) */
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             body { background: #fff !important; padding: 0 !important; display: block !important; }
+            
+            body.non-admin-print-block * { display: none !important; }
+            body.non-admin-print-block::before {
+                content: "🔒 Ação bloqueada: A impressão e a exportação de relatórios são exclusivas para Administradores.";
+                display: block !important;
+                padding: 50px 20px;
+                text-align: center;
+                font-size: 1.3em;
+                font-weight: bold;
+                color: #d32f2f;
+                border: 2px solid #d32f2f;
+                margin: 30px;
+                border-radius: 10px;
+            }
+
             .app-container { max-width: 100% !important; width: 100% !important; }
-            #page-login, .btn-logout, #boxFormCadastro, .item-actions, .export-toolbar, .btn-clear-filters, .busca-full { display: none !important; }
+            #page-login, .btn-logout, .btn-top-action, .pending-requests-banner, #boxFormCadastro, .item-actions, .export-toolbar, .btn-clear-filters, .busca-full, .modal-overlay { display: none !important; }
             .alupar-topbar { margin-bottom: 15px !important; padding: 10px 20px !important; }
             .filter-bar-sticky { position: static !important; box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 15px !important; grid-template-columns: repeat(3, 1fr) !important; }
             .filter-item select { border: none !important; background: transparent !important; appearance: none; -webkit-appearance: none; font-weight: bold; padding: 0; height: auto; }
@@ -380,9 +778,9 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="non-admin-print-block">
 
-<!-- TELA DE LOGIN -->
+<!-- TELA DE LOGIN E SOLICITAÇÃO DE CADASTRO -->
 <div id="page-login" class="page">
     <div class="login-wrapper">
         <div class="login-container">
@@ -390,12 +788,65 @@
                 <div class="alupar-logo">Al<span class="upar-bar">upar</span></div>
                 <p>Gestão de Férias - Regional Nordeste</p>
             </div>
-            <div class="login-body">
+
+            <!-- BLOCO 1: ENTRAR NO SISTEMA -->
+            <div class="login-body" id="blocoLoginForm">
                 <h2>🔒 Acesso Restrito</h2>
-                <div class="form-group"><label>Usuário</label><input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username"></div>
-                <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="Digite sua senha" autocomplete="current-password"></div>
+                <div class="form-group">
+                    <label>Usuário</label>
+                    <input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginPass" placeholder="Digite sua senha" autocomplete="current-password">
+                </div>
                 <div class="error-msg" id="loginError"></div>
                 <button class="main-btn" id="btnLogin" onclick="fazerLogin()">Entrar no Sistema</button>
+                <button type="button" class="btn-switch-auth" onclick="alternarTelaCadastroLogin(true)">📝 Criar Usuário / Solicitar Acesso</button>
+            </div>
+
+            <!-- BLOCO 2: SOLICITAR CRIAÇÃO DO PRÓPRIO USUÁRIO -->
+            <div class="login-body" id="blocoAutoCadastroForm" style="display:none;">
+                <h2>📝 Solicitar Acesso</h2>
+                <div class="info-hint-box">
+                    Preencha seus dados abaixo. Após a aprovação de um Administrador, sua <strong>senha inicial</strong> de primeiro acesso será igual ao seu <strong>Usuário</strong>.
+                </div>
+                <div class="form-group">
+                    <label>Usuário (Login desejado)</label>
+                    <input type="text" id="reqUserLogin" placeholder="Ex: rsilva" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Nome e Sobrenome</label>
+                    <input type="text" id="reqUserNome" placeholder="Ex: Rodrigo Silva" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label>Equipe (Setor)</label>
+                    <select id="reqUserEquipe">
+                        <option value="TELECOM">TELECOM</option>
+                        <option value="SPCS">SPCS</option>
+                        <option value="OPERAÇÃO">OPERAÇÃO</option>
+                        <option value="EAT">EAT</option>
+                        <option value="LT">LT</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subestação</label>
+                    <select id="reqUserSubestacao">
+                        <option value="SE JZT">SE JZT</option>
+                        <option value="SE GOR">SE GOR</option>
+                        <option value="SE OUR">SE OUR</option>
+                        <option value="SE BJD">SE BJD</option>
+                        <option value="SE SDS">SE SDS</option>
+                        <option value="SE RDE">SE RDE</option>
+                        <option value="SE RGD">SE RGD</option>
+                        <option value="SE JCT">SE JCT</option>
+                        <option value="SE JCD">SE JCD</option>
+                    </select>
+                </div>
+                <div class="error-msg" id="reqErrorMsg"></div>
+                <div class="success-msg" id="reqSuccessMsg"></div>
+                <button class="main-btn" id="btnEnviarSolicitacao" onclick="enviarSolicitacaoCadastro()">📨 Enviar Pedido de Aprovação</button>
+                <button type="button" class="btn-switch-auth" onclick="alternarTelaCadastroLogin(false)">← Voltar para o Login</button>
             </div>
         </div>
     </div>
@@ -411,21 +862,33 @@
                 <div class="brand-divider"></div>
                 <h1 class="page-title">Gestão de Férias - Regional Nordeste</h1>
             </div>
-            <button class="btn-logout" onclick="fazerLogout()">Sair 🚪</button>
+            <div class="user-session-box">
+                <span class="operator-badge" id="badgeOperadorAtivo">👤 Operador</span>
+                <button class="btn-top-action" onclick="abrirModalMinhaSenha(false)" title="Alterar minha senha de acesso">🔑 Alterar Senha</button>
+                <button class="btn-logout" onclick="fazerLogout()">Sair 🚪</button>
+            </div>
         </div>
     </header>
 
     <div class="app-container">
-        <!-- 1. FORMULÁRIO DE CADASTRO / EDIÇÃO -->
+        <!-- BANNER EXCLUSIVO ADMIN QUANDO HÁ SOLICITAÇÕES DE ACESSO PENDENTES -->
+        <div class="pending-requests-banner" id="bannerSolicitacoesPendentes">
+            <span id="textoBannerSolicitacoes">🔔 Há solicitações de criação de usuário aguardando aprovação!</span>
+            <button onclick="abrirModalUsuarios()">👥 Analisar Solicitações</button>
+        </div>
+
+        <!-- 1. FORMULÁRIO DE CADASTRO / EDIÇÃO (SELETOR DE COLABORADOR EXCLUSIVO PARA ADMINS) -->
         <div class="container-box" id="boxFormCadastro">
             <h2 class="form-title" id="tituloFormFerias">Cadastrar Período de Férias</h2>
-            <div class="ferias-form-grid">
-                <div class="form-group" style="margin:0">
-                    <label>Colaborador</label>
-                    <input type="text" id="fColab" placeholder="Nome do colaborador">
+            <div class="ferias-form-grid" id="gridFormFerias">
+                <!-- Campo visível apenas para Administradores -->
+                <div class="form-group" id="grupoColabAdmin" style="margin:0; display:none;">
+                    <label for="fColabSelect">Colaborador (Modo Admin)</label>
+                    <select id="fColabSelect" onchange="aoTrocarColaboradorAdmin()"></select>
                 </div>
+
                 <div class="form-group" style="margin:0">
-                    <label>Setor / Equipe</label>
+                    <label id="labelSetorForm">Setor / Equipe</label>
                     <select id="fSetor">
                         <option value="TELECOM">TELECOM</option>
                         <option value="SPCS">SPCS</option>
@@ -435,7 +898,7 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin:0">
-                    <label>Subestação</label>
+                    <label id="labelSubestacaoForm">Subestação</label>
                     <select id="fSubestacao">
                         <option value="SE JZT">SE JZT</option>
                         <option value="SE GOR">SE GOR</option>
@@ -453,16 +916,23 @@
                     <input type="number" id="fDias" min="1" max="30" placeholder="Ex: 15">
                 </div>
                 <div class="form-group" style="margin:0">
-                    <label>Início</label>
+                    <label>Data de Início</label>
                     <input type="date" id="fInicio" value="2026-01-05">
                 </div>
             </div>
+
+            <!-- Campo complementar caso o Admin escolha digitar o nome de um colaborador externo/sem login -->
+            <div class="custom-colab-wrapper" id="boxColabOutroNome">
+                <label for="fColabOutro">Nome e Sobrenome do Colaborador</label>
+                <input type="text" id="fColabOutro" placeholder="Digite o nome e sobrenome do colaborador">
+            </div>
+
             <div class="error-msg" id="errorMsgFerias"></div>
             <button class="main-btn" id="btnSalvarFerias" style="margin-top:12px;" onclick="salvarFerias()">Adicionar Férias</button>
             <button class="btn-cancel" id="btnCancelarFerias" onclick="cancelarEdicaoFerias()">Cancelar Edição</button>
         </div>
 
-        <!-- 2. BARRA DE FILTROS FIXA NO TOPO (SEMPRE VISÍVEL MESMO ROLANDO A PÁGINA) -->
+        <!-- 2. BARRA DE FILTROS FIXA NO TOPO -->
         <div class="filter-bar-sticky">
             <div class="filter-item busca-full">
                 <label for="filtroBusca">🔍 Buscar Colaborador</label>
@@ -506,7 +976,7 @@
             <button class="btn-clear-filters" onclick="limparFiltros()" title="Resetar todos os filtros">Limpar Filtros</button>
         </div>
 
-        <!-- 3. LISTA DE COLABORADORES COM ROLAGEM INTERNA (SUPORTA 500+ REGISTROS SEM ESTICAR A PÁGINA) -->
+        <!-- 3. LISTA DE COLABORADORES COM ROLAGEM INTERNA E BARRA DE FERRAMENTAS EXCLUSIVA ADMIN -->
         <div class="container-box">
             <div class="list-header-bar">
                 <div class="list-header-title">
@@ -517,9 +987,14 @@
 
             <div class="lista-scroll-box" id="listaFerias"></div>
 
-            <div class="export-toolbar">
-                <button class="btn-export csv" onclick="exportarCSV()">📊 Exportar Excel (CSV)</button>
-                <button class="btn-export print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
+            <!-- Barra inteira visível exclusivamente para Administradores -->
+            <div class="export-toolbar" id="toolbarAdmin">
+                <button id="btnGerenciarUsuarios" class="btn-export users" onclick="abrirModalUsuarios()">
+                    👥 Gerenciar Usuários <span class="pill-notif" id="badgeCountPendentes" style="display:none;">0</span>
+                </button>
+                <button id="btnAbrirAuditoria" class="btn-export audit" onclick="abrirModalAuditoria()">📜 Trilha de Auditoria (<span id="countLogs">0</span>)</button>
+                <button id="btnExportarCSV" class="btn-export csv" onclick="exportarCSV()">📊 Exportar Excel (CSV)</button>
+                <button id="btnImprimirPDF" class="btn-export print" onclick="imprimirRelatorio()">🖨️ Imprimir / Salvar PDF</button>
             </div>
         </div>
 
@@ -528,15 +1003,373 @@
     </div>
 </div>
 
+<!-- MODAL DE ALTERAÇÃO DE SENHA (OBRIGATÓRIA NO 1º ACESSO OU VOLUNTÁRIA) -->
+<div class="modal-overlay" id="modalMinhaSenha" onclick="tentarFecharOverlaySenha(event)">
+    <div class="modal-card" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 id="tituloModalMinhaSenha">🔑 Alterar Minha Senha</h3>
+            <button class="btn-close-modal" id="btnFecharMinhaSenha" onclick="fecharModalMinhaSenha()">✖</button>
+        </div>
+        <div class="modal-body">
+            <div class="mandatory-alert-box" id="avisoTrocaObrigatoria">
+                ⚠️ <strong>Primeiro acesso ou senha inicial detectada:</strong> Por segurança, você precisa definir uma nova senha pessoal diferente da senha padrão para liberar o uso do sistema.
+            </div>
+            <div class="form-group">
+                <label>Colaborador Conectado</label>
+                <input type="text" id="minhaSenhaUsuario" disabled style="background:#e2e8f0; color:#475569; font-weight:700;">
+            </div>
+            <div class="form-group">
+                <label>Senha Atual</label>
+                <input type="password" id="minhaSenhaAtual" placeholder="Digite sua senha atual">
+            </div>
+            <div class="form-group">
+                <label>Nova Senha (mín. 4 caracteres)</label>
+                <input type="password" id="minhaNovaSenha" placeholder="Digite uma nova senha exclusiva">
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+                <label>Confirmar Nova Senha</label>
+                <input type="password" id="minhaConfirmaSenha" placeholder="Repita a nova senha">
+            </div>
+            <div class="error-msg" id="msgErroMinhaSenha"></div>
+            <div class="success-msg" id="msgSucessoMinhaSenha"></div>
+            <button class="main-btn" onclick="salvarMinhaNovaSenha()">💾 Salvar Nova Senha e Liberar Acesso</button>
+            <button class="btn-cancel" id="btnSairModalSenha" style="display:none;" onclick="fazerLogout()">Sair / Trocar de Conta</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE GESTÃO DE USUÁRIOS E APROVAÇÃO DE SOLICITAÇÕES -->
+<div class="modal-overlay" id="modalUsuarios" onclick="if(event.target===this) fecharModalUsuarios()">
+    <div class="modal-card" style="max-width: 860px;">
+        <div class="modal-header">
+            <h3>👥 Gerenciamento de Usuários e Aprovações</h3>
+            <button class="btn-close-modal" onclick="fecharModalUsuarios()">✖</button>
+        </div>
+        <div class="modal-body">
+            <!-- SEÇÃO DE SOLICITAÇÕES DE ACESSO PENDENTES -->
+            <div class="pending-section-box" id="secaoSolicitacoesPendentes">
+                <h4 class="pending-section-title">🔔 Solicitações de Criação de Usuário Pendentes (<span id="countPendentesModal">0</span>)</h4>
+                <div id="listaSolicitacoesPendentes"></div>
+            </div>
+
+            <!-- CRIAÇÃO DIRETA PELO ADMIN COM DEFINIÇÃO DE LOTAÇÃO -->
+            <div class="user-form-grid">
+                <div>
+                    <label>Usuário (Login)</label>
+                    <input type="text" id="novoUserLogin" placeholder="Ex: rsilva" autocomplete="off">
+                </div>
+                <div>
+                    <label>Nome e Sobrenome</label>
+                    <input type="text" id="novoUserNome" placeholder="Ex: Rodrigo Silva" autocomplete="off">
+                </div>
+                <div>
+                    <label>Equipe</label>
+                    <select id="novoUserSetor">
+                        <option value="TELECOM">TELECOM</option>
+                        <option value="SPCS">SPCS</option>
+                        <option value="OPERAÇÃO">OPERAÇÃO</option>
+                        <option value="EAT">EAT</option>
+                        <option value="LT">LT</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Subestação</label>
+                    <select id="novoUserSubestacao">
+                        <option value="SE JZT">SE JZT</option>
+                        <option value="SE GOR">SE GOR</option>
+                        <option value="SE OUR">SE OUR</option>
+                        <option value="SE BJD">SE BJD</option>
+                        <option value="SE SDS">SE SDS</option>
+                        <option value="SE RDE">SE RDE</option>
+                        <option value="SE RGD">SE RGD</option>
+                        <option value="SE JCT">SE JCT</option>
+                        <option value="SE JCD">SE JCD</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Senha Inicial</label>
+                    <input type="text" id="novoUserSenha" placeholder="Senha 1º acesso" autocomplete="off">
+                </div>
+                <button class="main-btn" style="margin:0; height:46px; padding:0 16px;" onclick="criarNovoUsuario()">➕ Criar</button>
+                
+                <!-- Opção exclusiva para o usuário Master (alupar) -->
+                <label class="master-role-check" id="boxMasterRoleCheck">
+                    <input type="checkbox" id="novoUserAdminCheck">
+                    Definir este novo usuário como Administrador (Exclusivo Master Alupar)
+                </label>
+            </div>
+            <div class="error-msg" id="msgErroUsuario" style="margin-top:0; margin-bottom:10px;"></div>
+            
+            <div id="listaUsuariosSistema"></div>
+        </div>
+        <div class="log-footer">
+            <small style="color:#64748b;" id="rodapeInfoPermissao">A Equipe e a Subestação vinculadas ao usuário ficam travadas no formulário de férias de usuários comuns.</small>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE TRILHA DE AUDITORIA (VISUALIZAÇÃO ADMIN | EXPORTAÇÃO E LIMPEZA EXCLUSIVAS DO MASTER) -->
+<div class="modal-overlay" id="modalAuditoria" onclick="if(event.target===this) fecharModalAuditoria()">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>📜 Trilha de Auditoria e Rastreabilidade</h3>
+            <button class="btn-close-modal" onclick="fecharModalAuditoria()">✖</button>
+        </div>
+        <div class="modal-body" id="listaLogsAuditoria"></div>
+        <div class="log-footer">
+            <small style="color:#64748b;" id="textoRodapeAuditoria">Exibindo os últimos 250 eventos gravados no servidor.</small>
+            <!-- Botões de Exportar e Limpar Logs restritos exclusivamente ao Admin Master (alupar) -->
+            <div id="acoesMasterAuditoria" style="display:none; gap:8px;">
+                <button id="btnExportarLogsMaster" class="btn-export csv" style="flex:none; min-width:auto; padding:8px 14px;" onclick="exportarLogsCSV()">📥 Exportar Logs (CSV)</button>
+                <button id="btnLimparLogsMaster" class="btn-export" style="flex:none; min-width:auto; padding:8px 14px; background:var(--error); box-shadow:0 3px 0 #9a0007;" onclick="limparLogsAuditoria()">🗑️ Limpar Logs</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================
-    // BANCO DE DADOS (SINCRONIZAÇÃO SEGURA)
+    // TABELA BASE DE USUÁRIOS (CFALENCAR DEFINIDO COMO ADMIN)
+    // ==========================================
+    const USUARIOS_PADRAO = {
+        'alupar':      { pass: 'nordeste',    label: 'Administrador Master (Alupar)', role: 'master', setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: true },
+        'cfalencar':   { pass: 'cfalencar',   label: 'Carlos Alencar',                role: 'admin',  setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
+        'jsqueiroz':   { pass: 'jsqueiroz',   label: 'Josenir Silva',                 role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
+        'brrodrigues': { pass: 'brrodrigues', label: 'Bruno Alves Rodrigues',         role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
+        'ntribeiro':   { pass: 'ntribeiro',   label: 'Natanael Bonfim',               role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
+        'mmota':       { pass: 'mmota',       label: 'Mayara Mota',                   role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
+        'talsantos':   { pass: 'talsantos',   label: 'Tales Lopes',                   role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false }
+    };
+
+    const LISTA_SETORES = ['TELECOM', 'SPCS', 'OPERAÇÃO', 'EAT', 'LT'];
+    const LISTA_SES = ['SE JZT', 'SE GOR', 'SE OUR', 'SE BJD', 'SE SDS', 'SE RDE', 'SE RGD', 'SE JCT', 'SE JCD'];
+
+    // ==========================================
+    // BANCO DE DADOS E HIERARQUIA DE PERMISSÕES
     // ==========================================
     const BIN_ID = '6a7dd104da38895dfedfe24d'; 
     const API_KEY = '$2a$10$KMiP/Zy1E5f0NzxO2r4tcu24duXEofxlQ6S5ON2H0iJdaerfpjk86';
     const URL_DB = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-    let dbCache = { ferias: [] };
+    let dbCache = { ferias: [], logs: [], usuarios: {}, solicitacoes: [] };
     let dbCarregado = false;
+    let bloqueioTrocaSenhaAtivo = false;
+
+    function obterOperadorAtual() {
+        return sessionStorage.getItem('etb_operador') || 'Não identificado';
+    }
+
+    function obterLoginAtual() {
+        return (sessionStorage.getItem('etb_login') || '').toLowerCase().trim();
+    }
+
+    // Verifica se é o usuário Master (exclusivo 'alupar')
+    function isMaster() {
+        return obterLoginAtual() === 'alupar' || sessionStorage.getItem('etb_role') === 'master';
+    }
+
+    // Verifica se possui permissão de Administrador (Master ou Admin, ex: alupar e cfalencar)
+    function isAdmin() {
+        const r = sessionStorage.getItem('etb_role');
+        return r === 'admin' || r === 'master' || isMaster();
+    }
+
+    function obterMapaUsuarios() {
+        const mapa = {};
+        Object.keys(USUARIOS_PADRAO).forEach(k => {
+            mapa[k] = { ...USUARIOS_PADRAO[k] };
+        });
+        if (dbCache.usuarios && typeof dbCache.usuarios === 'object') {
+            Object.keys(dbCache.usuarios).forEach(k => {
+                const loginKey = k.toLowerCase().trim();
+                const regSalvo = dbCache.usuarios[k];
+                if (!regSalvo || typeof regSalvo !== 'object') return;
+
+                const padrao = USUARIOS_PADRAO[loginKey] || {};
+                const labelFinal = (regSalvo.label && regSalvo.label.trim() !== '') ? regSalvo.label.trim() : (padrao.label || loginKey);
+                const setorFinal = regSalvo.setor || padrao.setor || 'TELECOM';
+                const seFinal = regSalvo.subestacao || padrao.subestacao || 'SE JZT';
+
+                mapa[loginKey] = {
+                    ...padrao,
+                    ...regSalvo,
+                    label: labelFinal,
+                    setor: setorFinal,
+                    subestacao: seFinal
+                };
+            });
+        }
+        mapa['alupar'].role = 'master';
+        if (!mapa['alupar'].label) mapa['alupar'].label = USUARIOS_PADRAO['alupar'].label;
+        mapa['alupar'].senhaAlteradaPeloUsuario = true;
+
+        if (!dbCache.usuarios || !dbCache.usuarios['cfalencar'] || !dbCache.usuarios['cfalencar'].roleDefinidoPeloMaster) {
+            mapa['cfalencar'].role = 'admin';
+        }
+        return mapa;
+    }
+
+    // Popula o seletor de colaboradores para os Administradores
+    function popularSelectColaboradoresAdmin(loginSelecionado = null, nomeCustomizado = null) {
+        const selectColab = document.getElementById('fColabSelect');
+        const boxOutro = document.getElementById('boxColabOutroNome');
+        const inputOutro = document.getElementById('fColabOutro');
+        if (!selectColab) return;
+
+        const mapa = obterMapaUsuarios();
+        const meuLogin = obterLoginAtual();
+
+        // Lista todos os colaboradores (exceto o usuário técnico 'alupar', a menos que seja o único)
+        const chaves = Object.keys(mapa)
+            .filter(k => k !== 'alupar')
+            .sort((a, b) => (mapa[a].label || a).localeCompare(mapa[b].label || b));
+
+        let htmlOptions = chaves.map(k => {
+            const u = mapa[k];
+            return `<option value="${k}">${u.label} (${k})</option>`;
+        }).join('');
+
+        htmlOptions += `<option value="__OUTRO__">➕ Outro colaborador (digitar nome)...</option>`;
+        selectColab.innerHTML = htmlOptions;
+
+        if (nomeCustomizado !== null) {
+            // Procura se o nome corresponde a algum usuário cadastrado
+            const chaveEncontrada = chaves.find(k =>
+                k === (loginSelecionado || '').toLowerCase() ||
+                (mapa[k].label || '').toLowerCase() === nomeCustomizado.toLowerCase()
+            );
+            if (chaveEncontrada) {
+                selectColab.value = chaveEncontrada;
+                boxOutro.style.display = 'none';
+                inputOutro.value = '';
+            } else {
+                selectColab.value = '__OUTRO__';
+                boxOutro.style.display = 'block';
+                inputOutro.value = nomeCustomizado;
+            }
+        } else {
+            const padraoSelect = (loginSelecionado && mapa[loginSelecionado] && loginSelecionado !== 'alupar')
+                ? loginSelecionado
+                : (chaves.includes(meuLogin) ? meuLogin : (chaves[0] || '__OUTRO__'));
+            selectColab.value = padraoSelect;
+            boxOutro.style.display = padraoSelect === '__OUTRO__' ? 'block' : 'none';
+            if (padraoSelect !== '__OUTRO__') inputOutro.value = '';
+        }
+    }
+
+    // Atualiza Setor e Subestação automaticamente quando o Admin troca o colaborador no select
+    function aoTrocarColaboradorAdmin() {
+        if (!isAdmin()) return;
+        const selectColab = document.getElementById('fColabSelect');
+        const boxOutro = document.getElementById('boxColabOutroNome');
+        const selectSetor = document.getElementById('fSetor');
+        const selectSE = document.getElementById('fSubestacao');
+
+        const valor = selectColab.value;
+        if (valor === '__OUTRO__') {
+            boxOutro.style.display = 'block';
+            document.getElementById('fColabOutro').focus();
+        } else {
+            boxOutro.style.display = 'none';
+            const mapa = obterMapaUsuarios();
+            const conta = mapa[valor];
+            if (conta && editandoFeriasId === null) {
+                if (conta.setor) selectSetor.value = conta.setor;
+                if (conta.subestacao) selectSE.value = conta.subestacao;
+            }
+        }
+    }
+
+    // Configura o formulário de acordo com o perfil (Admin escolhe colaborador; Usuário comum tem lotação travada)
+    function aplicarLotacaoUsuarioNoFormulario() {
+        const gridForm = document.getElementById('gridFormFerias');
+        const grupoColabAdmin = document.getElementById('grupoColabAdmin');
+        const boxOutro = document.getElementById('boxColabOutroNome');
+        const selectSetor = document.getElementById('fSetor');
+        const selectSE = document.getElementById('fSubestacao');
+        const labelSetor = document.getElementById('labelSetorForm');
+        const labelSE = document.getElementById('labelSubestacaoForm');
+        if (!selectSetor || !selectSE) return;
+
+        const mapa = obterMapaUsuarios();
+        const conta = mapa[obterLoginAtual()];
+
+        if (isAdmin()) {
+            gridForm.classList.add('admin-mode');
+            grupoColabAdmin.style.display = 'block';
+            selectSetor.disabled = false;
+            selectSE.disabled = false;
+            labelSetor.innerText = 'Setor / Equipe';
+            labelSE.innerText = 'Subestação';
+
+            if (editandoFeriasId === null) {
+                popularSelectColaboradoresAdmin();
+                aoTrocarColaboradorAdmin();
+            }
+        } else {
+            gridForm.classList.remove('admin-mode');
+            grupoColabAdmin.style.display = 'none';
+            boxOutro.style.display = 'none';
+            if (conta) {
+                selectSetor.value = conta.setor || 'TELECOM';
+                selectSE.value = conta.subestacao || 'SE JZT';
+            }
+            selectSetor.disabled = true;
+            selectSE.disabled = true;
+            labelSetor.innerText = 'Setor / Equipe 🔒';
+            labelSE.innerText = 'Subestação 🔒';
+        }
+    }
+
+    function verificarTrocaSenhaObrigatoria() {
+        const login = obterLoginAtual();
+        if (!login || login === 'alupar') return false;
+        const mapa = obterMapaUsuarios();
+        const conta = mapa[login];
+        if (!conta) return false;
+        return !conta.senhaAlteradaPeloUsuario || conta.pass === login;
+    }
+
+    function podeModificarRegistro(registro) {
+        if (!registro) return false;
+        if (isAdmin()) return true;
+
+        const loginAtual = obterLoginAtual();
+        const nomeAtual = obterOperadorAtual().toLowerCase().trim();
+        const autorLogin = (registro.criadoPorLogin || '').toLowerCase().trim();
+        const titularLogin = (registro.titularLogin || '').toLowerCase().trim();
+        const autorNome = (registro.criadoPor || '').toLowerCase().trim();
+        const titularNome = (registro.nome || '').toLowerCase().trim();
+
+        return (
+            (autorLogin !== '' && autorLogin === loginAtual) ||
+            (titularLogin !== '' && titularLogin === loginAtual) ||
+            (titularNome !== '' && titularNome === nomeAtual) ||
+            (autorNome !== '' && (autorNome === nomeAtual || autorNome === loginAtual))
+        );
+    }
+
+    function formatarDataHoraAtual() {
+        const agora = new Date();
+        return `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function registrarLog(acao, detalhes, operadorCustom = null) {
+        if (!Array.isArray(dbCache.logs)) dbCache.logs = [];
+        const login = obterLoginAtual();
+        const nome = obterOperadorAtual();
+        const assinaturaPadrao = login && !nome.toLowerCase().includes(login) ? `${nome} (${login})` : nome;
+
+        dbCache.logs.unshift({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            dataHora: formatarDataHoraAtual(),
+            operador: operadorCustom || assinaturaPadrao,
+            acao: acao,
+            detalhes: detalhes
+        });
+        if (dbCache.logs.length > 250) {
+            dbCache.logs = dbCache.logs.slice(0, 250);
+        }
+    }
 
     function normalizarRegistro(f) {
         let setor = (f.setor || '').toUpperCase().trim();
@@ -566,14 +1399,17 @@
             if (json.record && typeof json.record === 'object') {
                 dbCache = {
                     ...json.record,
-                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias.map(normalizarRegistro) : []
+                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias.map(normalizarRegistro) : [],
+                    logs: Array.isArray(json.record.logs) ? json.record.logs : [],
+                    usuarios: (json.record.usuarios && typeof json.record.usuarios === 'object') ? json.record.usuarios : {},
+                    solicitacoes: Array.isArray(json.record.solicitacoes) ? json.record.solicitacoes : []
                 };
                 dbCarregado = true;
             }
             return dbCache;
         } catch (e) {
             console.error("Erro ao buscar banco:", e);
-            alert("Atenção: Não foi possível carregar os dados do servidor. Verifique sua conexão antes de fazer alterações.");
+            alert("Atenção: Não foi possível carregar os dados do servidor. Verifique sua conexão.");
             return dbCache;
         }
     }
@@ -607,25 +1443,141 @@
     }
 
     // ==========================================
+    // AUTO-CADASTRO NA TELA DE LOGIN E ANTI-DUPLICIDADE
+    // ==========================================
+    function alternarTelaCadastroLogin(mostrarCadastro) {
+        document.getElementById('blocoLoginForm').style.display = mostrarCadastro ? 'none' : 'block';
+        document.getElementById('blocoAutoCadastroForm').style.display = mostrarCadastro ? 'block' : 'none';
+        document.getElementById('loginError').innerText = '';
+        document.getElementById('reqErrorMsg').innerText = '';
+        document.getElementById('reqSuccessMsg').innerText = '';
+    }
+
+    async function enviarSolicitacaoCadastro() {
+        const loginDesejado = document.getElementById('reqUserLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+        const nomeCompleto = document.getElementById('reqUserNome').value.trim();
+        const equipe = document.getElementById('reqUserEquipe').value;
+        const subestacao = document.getElementById('reqUserSubestacao').value;
+        const erroEl = document.getElementById('reqErrorMsg');
+        const sucessoEl = document.getElementById('reqSuccessMsg');
+        const btn = document.getElementById('btnEnviarSolicitacao');
+
+        erroEl.innerText = '';
+        sucessoEl.innerText = '';
+
+        if (!loginDesejado || !nomeCompleto || !equipe || !subestacao) {
+            erroEl.innerText = 'Preencha todos os campos para solicitar o acesso.';
+            return;
+        }
+        if (loginDesejado.length < 3) {
+            erroEl.innerText = 'O usuário deve ter pelo menos 3 caracteres.';
+            return;
+        }
+        if (nomeCompleto.length < 3 || !nomeCompleto.includes(' ')) {
+            erroEl.innerText = 'Informe seu Nome e Sobrenome completos.';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'Verificando disponibilidade...';
+        await getDB();
+        btn.disabled = false;
+        btn.innerText = '📨 Enviar Pedido de Aprovação';
+
+        if (!dbCarregado) return;
+
+        const mapaUsuarios = obterMapaUsuarios();
+        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+        const nomeNorm = nomeCompleto.toLowerCase();
+
+        const jaExisteAtivo = mapaUsuarios[loginDesejado] ||
+            Object.values(mapaUsuarios).some(u => (u.label || '').toLowerCase().trim() === nomeNorm);
+
+        if (jaExisteAtivo) {
+            erroEl.innerText = 'Este usuário ou colaborador já possui cadastro ativo no sistema. Faça login.';
+            return;
+        }
+
+        const jaExisteSolicitacao = solicitacoes.some(s =>
+            (s.login || '').toLowerCase().trim() === loginDesejado ||
+            (s.label || '').toLowerCase().trim() === nomeNorm
+        );
+
+        if (jaExisteSolicitacao) {
+            erroEl.innerText = 'Já existe uma solicitação pendente para este usuário. Aguarde a aprovação do Administrador.';
+            return;
+        }
+
+        dbCache.solicitacoes.push({
+            id: Date.now(),
+            login: loginDesejado,
+            label: nomeCompleto,
+            setor: equipe,
+            subestacao: subestacao,
+            pass: loginDesejado,
+            solicitadoEm: formatarDataHoraAtual()
+        });
+
+        registrarLog(
+            'SOLICITAÇÃO',
+            `Solicitou criação do usuário "${loginDesejado}" (${nomeCompleto} | ${equipe} | ${subestacao}).`,
+            `${nomeCompleto} (${loginDesejado})`
+        );
+
+        const gravou = await saveDB();
+        if (gravou) {
+            document.getElementById('reqUserLogin').value = '';
+            document.getElementById('reqUserNome').value = '';
+            sucessoEl.innerText = '✅ Solicitação enviada com sucesso! Assim que um Administrador aprovar seu cadastro, você poderá fazer login.';
+        }
+    }
+
+    // ==========================================
     // LOGIN & NAVEGAÇÃO
     // ==========================================
     function isLoggedIn() { return sessionStorage.getItem('etb_logged') === 'true'; }
     
     async function fazerLogin() {
-        const u = document.getElementById('loginUser').value.trim();
+        const u = document.getElementById('loginUser').value.trim().toLowerCase();
         const p = document.getElementById('loginPass').value.trim();
         const e = document.getElementById('loginError');
         const btn = document.getElementById('btnLogin');
 
-        if (u === 'alupar' && p === 'nordeste') { 
-            sessionStorage.setItem('etb_logged', 'true'); 
+        if (!u || !p) {
+            e.innerText = 'Preencha usuário e senha.';
+            e.style.opacity = '1';
+            setTimeout(() => e.style.opacity = '0', 3000);
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'Verificando credenciais...';
+        await getDB();
+        btn.disabled = false;
+        btn.innerText = 'Entrar no Sistema';
+
+        const mapaUsuarios = obterMapaUsuarios();
+        const conta = mapaUsuarios[u];
+
+        if (!conta) {
+            const pendente = (dbCache.solicitacoes || []).find(s => (s.login || '').toLowerCase() === u);
+            if (pendente) {
+                e.innerText = '⏳ Seu cadastro ainda aguarda aprovação de um Administrador.';
+                e.style.opacity = '1';
+                setTimeout(() => e.style.opacity = '0', 4500);
+                return;
+            }
+        }
+
+        if (conta && conta.pass === p) { 
+            sessionStorage.setItem('etb_logged', 'true');
+            sessionStorage.setItem('etb_login', u);
+            sessionStorage.setItem('etb_operador', conta.label || u);
+            sessionStorage.setItem('etb_role', conta.role || 'user');
             e.style.opacity = '0'; 
-            btn.disabled = true;
-            btn.innerText = 'Sincronizando banco...';
-            await getDB();
-            btn.disabled = false;
-            btn.innerText = 'Entrar no Sistema';
-            location.hash = '#ferias'; 
+            document.getElementById('loginPass').value = '';
+            location.hash = '#ferias';
+            navigate();
         } else { 
             e.innerText = 'Usuário ou senha incorretos.'; 
             e.style.opacity = '1'; 
@@ -634,18 +1586,38 @@
     }
 
     function fazerLogout() { 
-        sessionStorage.removeItem('etb_logged'); 
+        sessionStorage.removeItem('etb_logged');
+        sessionStorage.removeItem('etb_login');
+        sessionStorage.removeItem('etb_operador');
+        sessionStorage.removeItem('etb_role');
         dbCarregado = false;
+        bloqueioTrocaSenhaAtivo = false;
+        document.body.classList.add('non-admin-print-block');
+        fecharModalAuditoria();
+        fecharModalUsuarios();
+        document.getElementById('modalMinhaSenha').classList.remove('open');
         cancelarEdicaoFerias();
+        alternarTelaCadastroLogin(false);
         location.hash = '#login'; 
     }
 
     document.addEventListener('keydown', e => { 
-        if (e.key === 'Enter' && (!isLoggedIn() || location.hash === '#login')) fazerLogin(); 
+        if (e.key === 'Enter' && (!isLoggedIn() || location.hash === '#login')) {
+            const cadVisivel = document.getElementById('blocoAutoCadastroForm').style.display === 'block';
+            if (cadVisivel) enviarSolicitacaoCadastro();
+            else fazerLogin();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+            if (!isLoggedIn() || !isAdmin()) {
+                e.preventDefault();
+                alert("Acesso restrito: apenas administradores podem imprimir ou exportar em PDF.");
+            }
+        }
     });
 
     async function navigate() {
         if (!isLoggedIn()) { 
+            document.body.classList.add('non-admin-print-block');
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-login').classList.add('active');
             if (location.hash !== '#login') location.hash = '#login';
@@ -656,17 +1628,535 @@
             await getDB();
         }
 
+        const mapa = obterMapaUsuarios();
+        const meuLogin = obterLoginAtual();
+        if (mapa[meuLogin]) {
+            sessionStorage.setItem('etb_role', mapa[meuLogin].role);
+            sessionStorage.setItem('etb_operador', mapa[meuLogin].label || meuLogin);
+        }
+
+        // Configura o formulário para Admin (com seletor de colaboradores) ou Usuário Comum (lotação travada)
+        aplicarLotacaoUsuarioNoFormulario();
+
+        const badge = document.getElementById('badgeOperadorAtivo');
+        const toolbarAdmin = document.getElementById('toolbarAdmin');
+
+        if (isAdmin()) {
+            const sufixo = isMaster() ? ' [MASTER]' : ' [ADMIN]';
+            badge.innerText = `🛡️ ${obterOperadorAtual()}${obterOperadorAtual().includes('Master') ? '' : sufixo}`;
+            badge.classList.add('is-admin');
+            toolbarAdmin.style.display = 'flex';
+            document.body.classList.remove('non-admin-print-block');
+        } else {
+            badge.innerText = `👤 ${obterOperadorAtual()}`;
+            badge.classList.remove('is-admin');
+            toolbarAdmin.style.display = 'none';
+            document.body.classList.add('non-admin-print-block');
+            fecharModalAuditoria();
+            fecharModalUsuarios();
+        }
+
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById('page-ferias').classList.add('active');
         if (location.hash !== '#ferias') location.hash = '#ferias';
         renderFerias();
+
+        if (verificarTrocaSenhaObrigatoria()) {
+            abrirModalMinhaSenha(true);
+        }
     }
 
     window.addEventListener('hashchange', navigate);
     window.addEventListener('load', navigate);
 
     // ==========================================
-    // GESTÃO DE FÉRIAS (CADASTRO, FILTRO E EDIÇÃO)
+    // ALTERAÇÃO DE SENHA (OBRIGATÓRIA NO 1º ACESSO OU VOLUNTÁRIA)
+    // ==========================================
+    function abrirModalMinhaSenha(obrigatoria = false) {
+        bloqueioTrocaSenhaAtivo = obrigatoria || verificarTrocaSenhaObrigatoria();
+        const meuLogin = obterLoginAtual();
+        const meuNome = obterOperadorAtual();
+
+        document.getElementById('minhaSenhaUsuario').value = `${meuNome} (${meuLogin})`;
+        document.getElementById('minhaSenhaAtual').value = '';
+        document.getElementById('minhaNovaSenha').value = '';
+        document.getElementById('minhaConfirmaSenha').value = '';
+        document.getElementById('msgErroMinhaSenha').innerText = '';
+        document.getElementById('msgSucessoMinhaSenha').innerText = '';
+
+        const titulo = document.getElementById('tituloModalMinhaSenha');
+        const btnFechar = document.getElementById('btnFecharMinhaSenha');
+        const aviso = document.getElementById('avisoTrocaObrigatoria');
+        const btnSair = document.getElementById('btnSairModalSenha');
+
+        if (bloqueioTrocaSenhaAtivo) {
+            titulo.innerText = '🔒 Troca Obrigatória de Senha';
+            btnFechar.style.display = 'none';
+            aviso.style.display = 'block';
+            btnSair.style.display = 'block';
+        } else {
+            titulo.innerText = '🔑 Alterar Minha Senha';
+            btnFechar.style.display = 'block';
+            aviso.style.display = 'none';
+            btnSair.style.display = 'none';
+        }
+
+        document.getElementById('modalMinhaSenha').classList.add('open');
+    }
+
+    function tentarFecharOverlaySenha(event) {
+        if (event.target.id === 'modalMinhaSenha' && !bloqueioTrocaSenhaAtivo) {
+            fecharModalMinhaSenha();
+        }
+    }
+
+    function fecharModalMinhaSenha() {
+        if (bloqueioTrocaSenhaAtivo || verificarTrocaSenhaObrigatoria()) {
+            return;
+        }
+        document.getElementById('modalMinhaSenha').classList.remove('open');
+    }
+
+    async function salvarMinhaNovaSenha() {
+        const meuLogin = obterLoginAtual();
+        const atual = document.getElementById('minhaSenhaAtual').value.trim();
+        const nova = document.getElementById('minhaNovaSenha').value.trim();
+        const confirma = document.getElementById('minhaConfirmaSenha').value.trim();
+        const erroEl = document.getElementById('msgErroMinhaSenha');
+        const sucessoEl = document.getElementById('msgSucessoMinhaSenha');
+
+        erroEl.innerText = '';
+        sucessoEl.innerText = '';
+
+        if (!atual || !nova || !confirma) {
+            erroEl.innerText = 'Preencha todos os campos.';
+            return;
+        }
+
+        const mapa = obterMapaUsuarios();
+        const conta = mapa[meuLogin];
+        if (!conta || conta.pass !== atual) {
+            erroEl.innerText = 'A senha atual informada está incorreta.';
+            return;
+        }
+
+        if (nova.length < 4) {
+            erroEl.innerText = 'A nova senha deve ter pelo menos 4 caracteres.';
+            return;
+        }
+
+        if (nova.toLowerCase() === meuLogin) {
+            erroEl.innerText = 'Por segurança, a nova senha não pode ser igual ao seu nome de usuário.';
+            return;
+        }
+
+        if (nova === atual) {
+            erroEl.innerText = 'A nova senha deve ser diferente da senha atual.';
+            return;
+        }
+
+        if (nova !== confirma) {
+            erroEl.innerText = 'A confirmação da nova senha não confere.';
+            return;
+        }
+
+        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+            dbCache.usuarios = {};
+        }
+
+        dbCache.usuarios[meuLogin] = {
+            ...(dbCache.usuarios[meuLogin] || {}),
+            ...conta,
+            pass: nova,
+            senhaAlteradaPeloUsuario: true,
+            ultimaTrocaSenhaEm: formatarDataHoraAtual()
+        };
+
+        registrarLog('SENHA', `O usuário "${meuLogin}" (${conta.label}) definiu uma nova senha pessoal.`);
+        const ok = await saveDB();
+        if (ok) {
+            bloqueioTrocaSenhaAtivo = false;
+            sucessoEl.innerText = '✅ Senha atualizada! Acesso liberado.';
+            setTimeout(() => {
+                document.getElementById('modalMinhaSenha').classList.remove('open');
+            }, 900);
+        }
+    }
+
+    // ==========================================
+    // GERENCIAMENTO DE USUÁRIOS E APROVAÇÃO DE SOLICITAÇÕES
+    // ==========================================
+    function mostrarErroUsuario(msg) {
+        const el = document.getElementById('msgErroUsuario');
+        el.innerText = msg;
+        el.style.opacity = '1';
+        setTimeout(() => el.style.opacity = '0', 3500);
+    }
+
+    function abrirModalUsuarios() {
+        if (!isAdmin()) {
+            return alert("Acesso restrito: apenas administradores podem gerenciar usuários.");
+        }
+        document.getElementById('novoUserLogin').value = '';
+        document.getElementById('novoUserNome').value = '';
+        document.getElementById('novoUserSenha').value = '';
+        document.getElementById('novoUserAdminCheck').checked = false;
+
+        document.getElementById('boxMasterRoleCheck').style.display = isMaster() ? 'flex' : 'none';
+
+        renderListaUsuariosModal();
+        document.getElementById('modalUsuarios').classList.add('open');
+    }
+
+    function fecharModalUsuarios() {
+        document.getElementById('modalUsuarios').classList.remove('open');
+    }
+
+    async function aprovarSolicitacaoUsuario(idSolicitacao) {
+        if (!isAdmin()) return;
+        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+        const req = solicitacoes.find(s => s.id === idSolicitacao);
+        if (!req) return;
+
+        const loginKey = (req.login || '').toLowerCase().trim();
+        const mapaAtual = obterMapaUsuarios();
+
+        if (mapaAtual[loginKey]) {
+            dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
+            await saveDB();
+            renderListaUsuariosModal();
+            renderFerias();
+            return mostrarErroUsuario(`O usuário "${loginKey}" já consta como ativo.`);
+        }
+
+        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+            dbCache.usuarios = {};
+        }
+
+        dbCache.usuarios[loginKey] = {
+            pass: req.pass || loginKey,
+            label: req.label || loginKey,
+            setor: req.setor || 'TELECOM',
+            subestacao: req.subestacao || 'SE JZT',
+            role: 'user',
+            senhaAlteradaPeloUsuario: false,
+            aprovadoPor: obterOperadorAtual(),
+            aprovadoEm: formatarDataHoraAtual()
+        };
+
+        dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
+        registrarLog('APROVAÇÃO', `Aprovou a criação do usuário "${loginKey}" (${req.label} | ${req.setor} | ${req.subestacao}).`);
+
+        await saveDB();
+        aplicarLotacaoUsuarioNoFormulario();
+        renderListaUsuariosModal();
+        renderFerias();
+    }
+
+    async function recusarSolicitacaoUsuario(idSolicitacao) {
+        if (!isAdmin()) return;
+        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+        const req = solicitacoes.find(s => s.id === idSolicitacao);
+        if (!req) return;
+
+        if (!confirm(`Deseja recusar e excluir a solicitação de acesso de "${req.label}" (${req.login})?`)) return;
+
+        dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
+        registrarLog('RECUSA', `Recusou e excluiu a solicitação de acesso de "${req.login}" (${req.label} | ${req.setor} | ${req.subestacao}).`);
+
+        await saveDB();
+        renderListaUsuariosModal();
+        renderFerias();
+    }
+
+    async function criarNovoUsuario() {
+        if (!isAdmin()) return;
+
+        const loginNovo = document.getElementById('novoUserLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+        const nomeSobrenome = document.getElementById('novoUserNome').value.trim();
+        const setorNovo = document.getElementById('novoUserSetor').value;
+        const seNova = document.getElementById('novoUserSubestacao').value;
+        const senhaNova = document.getElementById('novoUserSenha').value.trim();
+        const definirComoAdmin = isMaster() && document.getElementById('novoUserAdminCheck').checked;
+
+        if (!loginNovo || !nomeSobrenome || !setorNovo || !seNova || !senhaNova) {
+            return mostrarErroUsuario("Preencha login, nome e sobrenome, equipe, subestação e senha inicial.");
+        }
+        if (loginNovo.length < 3) {
+            return mostrarErroUsuario("O usuário (login) deve ter pelo menos 3 caracteres.");
+        }
+        if (nomeSobrenome.length < 3) {
+            return mostrarErroUsuario("Informe o Nome e Sobrenome do colaborador.");
+        }
+
+        const mapaAtual = obterMapaUsuarios();
+        if (mapaAtual[loginNovo]) {
+            return mostrarErroUsuario(`O usuário "${loginNovo}" já existe no sistema.`);
+        }
+
+        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+            dbCache.usuarios = {};
+        }
+
+        const roleAtribuida = definirComoAdmin ? 'admin' : 'user';
+
+        dbCache.usuarios[loginNovo] = {
+            pass: senhaNova,
+            label: nomeSobrenome,
+            setor: setorNovo,
+            subestacao: seNova,
+            role: roleAtribuida,
+            senhaAlteradaPeloUsuario: false,
+            roleDefinidoPeloMaster: isMaster(),
+            criadoPor: obterOperadorAtual(),
+            criadoEm: formatarDataHoraAtual()
+        };
+
+        if (Array.isArray(dbCache.solicitacoes)) {
+            dbCache.solicitacoes = dbCache.solicitacoes.filter(s => (s.login || '').toLowerCase() !== loginNovo);
+        }
+
+        registrarLog('USUÁRIO', `Criou o usuário "${loginNovo}" (${nomeSobrenome} | ${setorNovo} | ${seNova}) com perfil [${roleAtribuida.toUpperCase()}]`);
+
+        document.getElementById('novoUserLogin').value = '';
+        document.getElementById('novoUserNome').value = '';
+        document.getElementById('novoUserSenha').value = '';
+        document.getElementById('novoUserAdminCheck').checked = false;
+
+        await saveDB();
+        aplicarLotacaoUsuarioNoFormulario();
+        renderListaUsuariosModal();
+        renderFerias();
+    }
+
+    async function salvarDadosUsuario(loginAlvo) {
+        if (!isAdmin()) return;
+
+        const mapa = obterMapaUsuarios();
+        const alvo = mapa[loginAlvo];
+        if (!alvo) return;
+
+        const selectSetor = document.getElementById(`editSetor_${loginAlvo}`);
+        const selectSE = document.getElementById(`editSE_${loginAlvo}`);
+        const novoSetor = selectSetor ? selectSetor.value : (alvo.setor || 'TELECOM');
+        const novaSE = selectSE ? selectSE.value : (alvo.subestacao || 'SE JZT');
+
+        let novoNome = alvo.label;
+        let novaSenha = alvo.pass;
+        let trocouSenha = false;
+
+        if (isMaster()) {
+            const inputNome = document.getElementById(`editNome_${loginAlvo}`);
+            const inputPass = document.getElementById(`editPass_${loginAlvo}`);
+            if (inputNome && inputPass) {
+                novoNome = inputNome.value.trim();
+                novaSenha = inputPass.value.trim();
+                if (!novoNome || novoNome.length < 3) {
+                    return mostrarErroUsuario(`Informe o Nome e Sobrenome válido para "${loginAlvo}".`);
+                }
+                if (!novaSenha || novaSenha.length < 3) {
+                    return mostrarErroUsuario(`A senha para "${loginAlvo}" deve ter pelo menos 3 caracteres.`);
+                }
+                trocouSenha = novaSenha !== alvo.pass;
+            }
+        }
+
+        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+            dbCache.usuarios = {};
+        }
+
+        const exigirTrocaNoProximoLogin = loginAlvo !== 'alupar' && trocouSenha;
+
+        dbCache.usuarios[loginAlvo] = {
+            ...(dbCache.usuarios[loginAlvo] || {}),
+            ...alvo,
+            label: novoNome,
+            setor: novoSetor,
+            subestacao: novaSE,
+            pass: novaSenha,
+            senhaAlteradaPeloUsuario: trocouSenha ? !exigirTrocaNoProximoLogin : alvo.senhaAlteradaPeloUsuario,
+            ultimaTrocaSenhaEm: formatarDataHoraAtual()
+        };
+
+        registrarLog('USUÁRIO', `Atualizou cadastro de "${loginAlvo}" (${novoNome} | Lotação: ${novoSetor} - ${novaSE}${trocouSenha ? ' | Senha redefinida' : ''}).`);
+        await saveDB();
+        aplicarLotacaoUsuarioNoFormulario();
+        renderListaUsuariosModal();
+        alert(`Dados de "${novoNome}" (${loginAlvo}) atualizados com sucesso!`);
+    }
+
+    async function alternarPermissaoAdmin(loginAlvo) {
+        if (!isMaster()) {
+            return alert("Apenas o usuário Master (alupar) pode definir ou revogar permissões de Administrador.");
+        }
+        if (loginAlvo === 'alupar') return;
+
+        const mapa = obterMapaUsuarios();
+        const alvo = mapa[loginAlvo];
+        if (!alvo) return;
+
+        const novaRole = alvo.role === 'admin' ? 'user' : 'admin';
+        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+            dbCache.usuarios = {};
+        }
+
+        dbCache.usuarios[loginAlvo] = {
+            ...alvo,
+            role: novaRole,
+            roleDefinidoPeloMaster: true
+        };
+
+        registrarLog('USUÁRIO', `Master alterou a permissão de "${loginAlvo}" (${alvo.label}) para [${novaRole.toUpperCase()}]`);
+        await saveDB();
+        renderListaUsuariosModal();
+        renderFerias();
+    }
+
+    async function excluirUsuarioSistema(loginAlvo) {
+        if (!isAdmin()) return;
+        if (loginAlvo === 'alupar') return alert("O usuário Master não pode ser removido.");
+        if (loginAlvo === obterLoginAtual()) return alert("Você não pode excluir o seu próprio usuário em uso.");
+
+        const mapa = obterMapaUsuarios();
+        const alvo = mapa[loginAlvo];
+        if (!alvo) return;
+
+        if (alvo.role === 'admin' && !isMaster()) {
+            return alert("Apenas o usuário Master (alupar) pode excluir um usuário Administrador.");
+        }
+
+        if (USUARIOS_PADRAO[loginAlvo] && !isMaster()) {
+            return alert("Apenas o usuário Master (alupar) pode remover usuários da lista base.");
+        }
+
+        if (!confirm(`Deseja remover o usuário "${alvo.label}" (${loginAlvo})?`)) return;
+
+        if (dbCache.usuarios && dbCache.usuarios[loginAlvo]) {
+            delete dbCache.usuarios[loginAlvo];
+        }
+
+        registrarLog('USUÁRIO', `Removeu o usuário "${loginAlvo}" (${alvo.label})`);
+        await saveDB();
+        aplicarLotacaoUsuarioNoFormulario();
+        renderListaUsuariosModal();
+        renderFerias();
+    }
+
+    function renderListaUsuariosModal() {
+        const secaoPendentes = document.getElementById('secaoSolicitacoesPendentes');
+        const listaPendentesEl = document.getElementById('listaSolicitacoesPendentes');
+        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+
+        document.getElementById('countPendentesModal').innerText = solicitacoes.length;
+
+        if (solicitacoes.length > 0) {
+            secaoPendentes.style.display = 'block';
+            listaPendentesEl.innerHTML = solicitacoes.map(s => `
+                <div class="pending-card">
+                    <div>
+                        <strong style="color:var(--alupar-blue); font-size:1em;">${s.label}</strong>
+                        <small style="color:#475569; font-weight:700;">(${s.login})</small>
+                        <span class="badge-meta badge-setor" style="margin-left:4px;">${s.setor || 'S/S'}</span>
+                        <span class="badge-meta badge-se">${s.subestacao || 'S/SE'}</span>
+                        <div style="font-size:0.75em; color:#64748b; margin-top:3px;">🕒 Solicitado em: ${s.solicitadoEm || '-'}</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-approve" onclick="aprovarSolicitacaoUsuario(${s.id})">✅ Aprovar</button>
+                        <button class="btn-reject" onclick="recusarSolicitacaoUsuario(${s.id})">✖ Recusar</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            secaoPendentes.style.display = 'none';
+            listaPendentesEl.innerHTML = '';
+        }
+
+        const container = document.getElementById('listaUsuariosSistema');
+        const mapa = obterMapaUsuarios();
+        const masterLogado = isMaster();
+
+        const chaves = Object.keys(mapa).sort((a, b) => {
+            if (a === 'alupar') return -1;
+            if (b === 'alupar') return 1;
+            return a.localeCompare(b);
+        });
+
+        container.innerHTML = chaves.map(loginKey => {
+            const u = mapa[loginKey];
+            const roleClass = u.role === 'master' ? 'master' : (u.role === 'admin' ? 'admin' : 'user');
+            const roleLabel = u.role === 'master' ? 'MASTER' : (u.role === 'admin' ? 'ADMIN' : 'USUÁRIO');
+            const nomeFormatado = u.label || loginKey;
+            const nomeSeguroHtml = nomeFormatado.replace(/"/g, '&quot;');
+            const senhaSeguraHtml = (u.pass || '').replace(/"/g, '&quot;');
+            const setorAtual = u.setor || 'TELECOM';
+            const seAtual = u.subestacao || 'SE JZT';
+
+            const trocouSenha = loginKey === 'alupar' || (u.senhaAlteradaPeloUsuario && u.pass !== loginKey);
+            const pillSenhaStatus = loginKey === 'alupar'
+                ? ''
+                : (trocouSenha
+                    ? '<span class="status-pass-pill ok">✓ Senha Pessoal Definida</span>'
+                    : '<span class="status-pass-pill pending">⏳ Troca Pendente no 1º Acesso</span>');
+
+            const opcoesSetorHtml = LISTA_SETORES.map(st =>
+                `<option value="${st}" ${st === setorAtual ? 'selected' : ''}>${st}</option>`
+            ).join('');
+
+            const opcoesSEHtml = LISTA_SES.map(se =>
+                `<option value="${se}" ${se === seAtual ? 'selected' : ''}>${se}</option>`
+            ).join('');
+
+            let botoesHtml = '';
+            if (loginKey !== 'alupar') {
+                if (masterLogado) {
+                    const txtToggle = u.role === 'admin' ? 'Rebaixar p/ Usuário' : 'Tornar Admin';
+                    botoesHtml += `<button class="btn-role-toggle" onclick="alternarPermissaoAdmin('${loginKey}')">${txtToggle}</button>`;
+                }
+                if (dbCache.usuarios && dbCache.usuarios[loginKey] && !USUARIOS_PADRAO[loginKey] && (masterLogado || u.role !== 'admin')) {
+                    botoesHtml += `<button class="btn-icon delete" style="width:32px;height:32px;font-size:1em;" onclick="excluirUsuarioSistema('${loginKey}')" title="Excluir Usuário">✖</button>`;
+                }
+            }
+
+            const infoSenhaMaster = masterLogado
+                ? `<span class="pass-current-view">🔑 Senha: <code>${senhaSeguraHtml}</code></span>`
+                : `<span class="pass-current-view">📍 Lotação vinculada ao formulário:</span>`;
+
+            const camposMasterNomeSenha = masterLogado ? `
+                <input type="text" class="inp-nome-master" id="editNome_${loginKey}" value="${nomeSeguroHtml}" placeholder="Nome e Sobrenome" title="Nome e Sobrenome">
+                <input type="text" class="inp-senha-master" id="editPass_${loginKey}" value="${senhaSeguraHtml}" placeholder="Senha" title="Senha de acesso">
+            ` : '';
+
+            return `
+                <div class="user-row">
+                    <div class="user-row-top">
+                        <div>
+                            <strong style="color:var(--alupar-blue); font-size:1.02em;">${nomeFormatado}</strong>
+                            <small style="color:#64748b; font-weight:600; margin-left:4px;">(${loginKey})</small>
+                            <span class="role-pill ${roleClass}" style="margin-left:6px;">${roleLabel}</span>
+                            <span class="badge-meta badge-setor" style="margin-left:4px;">${setorAtual}</span>
+                            <span class="badge-meta badge-se">${seAtual}</span>
+                            ${pillSenhaStatus}
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            ${botoesHtml}
+                        </div>
+                    </div>
+                    <div class="user-master-pass-bar">
+                        ${infoSenhaMaster}
+                        <div class="master-pass-edit-group">
+                            ${camposMasterNomeSenha}
+                            <select class="inp-lot-master" id="editSetor_${loginKey}" title="Equipe / Setor">${opcoesSetorHtml}</select>
+                            <select class="inp-lot-master" id="editSE_${loginKey}" title="Subestação">${opcoesSEHtml}</select>
+                            <button class="btn-save-pass-master" onclick="salvarDadosUsuario('${loginKey}')">💾 Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ==========================================
+    // GESTÃO DE FÉRIAS (ADMIN SELECIONA QUALQUER COLABORADOR / USUÁRIO COMUM USA O PRÓPRIO)
     // ==========================================
     const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     const DIAS_SEMANA = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -676,7 +2166,7 @@
         const el = document.getElementById('errorMsgFerias'); 
         el.innerText = msg; 
         el.style.opacity = '1'; 
-        setTimeout(() => el.style.opacity = '0', 3000); 
+        setTimeout(() => el.style.opacity = '0', 3500); 
     }
 
     function extrairDataInput(f) {
@@ -715,45 +2205,108 @@
     }
     
     async function salvarFerias() {
-        let n = document.getElementById('fColab').value.trim(),
-            setor = document.getElementById('fSetor').value,
-            subestacao = document.getElementById('fSubestacao').value,
-            d = parseInt(document.getElementById('fDias').value),
-            i = document.getElementById('fInicio').value;
-        if (!n || !setor || !subestacao || !d || !i) return showErrorFerias("Preencha todos os campos.");
+        if (verificarTrocaSenhaObrigatoria()) {
+            abrirModalMinhaSenha(true);
+            return;
+        }
+
+        const mapa = obterMapaUsuarios();
+        const operador = obterOperadorAtual();
+        const loginOperador = obterLoginAtual();
+        const contaLogada = mapa[loginOperador];
+
+        // Define o nome e o login do colaborador titular das férias
+        let nomeColaborador = operador;
+        let loginTitular = loginOperador;
+
+        if (isAdmin()) {
+            const selectColab = document.getElementById('fColabSelect');
+            const valSelect = selectColab ? selectColab.value : '';
+            if (valSelect === '__OUTRO__') {
+                const digitado = document.getElementById('fColabOutro').value.trim();
+                if (!digitado || digitado.length < 2) {
+                    return showErrorFerias("Informe o nome e sobrenome do colaborador.");
+                }
+                nomeColaborador = digitado;
+                loginTitular = '';
+            } else if (mapa[valSelect]) {
+                nomeColaborador = mapa[valSelect].label || valSelect;
+                loginTitular = valSelect;
+            }
+        }
+
+        // Se for usuário comum, força estritamente a Equipe e Subestação aprovadas no seu cadastro
+        let setor = isAdmin() ? document.getElementById('fSetor').value : ((contaLogada && contaLogada.setor) || document.getElementById('fSetor').value);
+        let subestacao = isAdmin() ? document.getElementById('fSubestacao').value : ((contaLogada && contaLogada.subestacao) || document.getElementById('fSubestacao').value);
+        let d = parseInt(document.getElementById('fDias').value);
+        let i = document.getElementById('fInicio').value;
+
+        if (!nomeColaborador || !setor || !subestacao || !d || !i) return showErrorFerias("Preencha todos os campos.");
         if (d < 1 || d > 30) return showErrorFerias("O período deve ser entre 1 e 30 dias.");
         
         let idDate = new Date(i + "T00:00:00"), fdDate = new Date(idDate);
         fdDate.setDate(fdDate.getDate() + d - 1);
 
-        let dadosFerias = {
-            nome: n,
-            setor: setor,
-            subestacao: subestacao,
-            dias: d,
-            inicioIso: i,
-            inicioStr: idDate.toLocaleDateString('pt-BR'),
-            fimStr: fdDate.toLocaleDateString('pt-BR'),
-            inicioTimestamp: idDate.getTime(),
-            fimTimestamp: fdDate.getTime()
-        };
+        const inicioFormatado = idDate.toLocaleDateString('pt-BR');
+        const fimFormatado = fdDate.toLocaleDateString('pt-BR');
+        const agoraStr = formatarDataHoraAtual();
 
         if (editandoFeriasId !== null) {
             let idx = dbCache.ferias.findIndex(f => f.id === editandoFeriasId);
             if (idx !== -1) {
-                dbCache.ferias[idx] = { ...dbCache.ferias[idx], ...dadosFerias };
+                const ant = dbCache.ferias[idx];
+                if (!podeModificarRegistro(ant)) {
+                    limparFormularioFerias();
+                    return showErrorFerias("Acesso negado: você só pode editar registros cadastrados por você.");
+                }
+                const nomeFinal = isAdmin() ? nomeColaborador : (ant.nome || operador);
+                const loginTitularFinal = isAdmin() ? loginTitular : (ant.titularLogin || ant.criadoPorLogin || loginOperador);
+                const resumoAntes = `${ant.nome} (${ant.setor || 'S/S'} | ${ant.subestacao || 'S/SE'}): ${ant.inicioStr} a ${ant.fimStr} (${ant.dias}d)`;
+                const resumoDepois = `${nomeFinal} (${setor} | ${subestacao}): ${inicioFormatado} a ${fimFormatado} (${d}d)`;
+                
+                dbCache.ferias[idx] = {
+                    ...ant,
+                    nome: nomeFinal,
+                    titularLogin: loginTitularFinal,
+                    setor: setor,
+                    subestacao: subestacao,
+                    dias: d,
+                    inicioIso: i,
+                    inicioStr: inicioFormatado,
+                    fimStr: fimFormatado,
+                    inicioTimestamp: idDate.getTime(),
+                    fimTimestamp: fdDate.getTime(),
+                    editadoPor: operador,
+                    editadoPorLogin: loginOperador,
+                    editadoEm: agoraStr
+                };
+                registrarLog('EDIÇÃO', `De [${resumoAntes}] para [${resumoDepois}]`);
             }
             limparFormularioFerias();
         } else {
             dbCache.ferias.push({
                 id: Date.now(),
-                ...dadosFerias
+                nome: nomeColaborador,
+                titularLogin: loginTitular,
+                setor: setor,
+                subestacao: subestacao,
+                dias: d,
+                inicioIso: i,
+                inicioStr: inicioFormatado,
+                fimStr: fimFormatado,
+                inicioTimestamp: idDate.getTime(),
+                fimTimestamp: fdDate.getTime(),
+                criadoPor: operador,
+                criadoPorLogin: loginOperador,
+                criadoEm: agoraStr
             });
-            document.getElementById('fColab').value = '';
+            registrarLog('CADASTRO', `Cadastrou férias de ${nomeColaborador} (${setor} | ${subestacao}): ${inicioFormatado} até ${fimFormatado} (${d} dias)`);
             document.getElementById('fDias').value = '';
+            if (isAdmin() && document.getElementById('fColabSelect').value === '__OUTRO__') {
+                document.getElementById('fColabOutro').value = '';
+            }
         }
 
-        // Sincroniza o seletor de ano automaticamente para o ano recém-cadastrado
         const anoCadastrado = String(idDate.getFullYear());
         const selectAno = document.getElementById('anoSelecionado');
         if ([...selectAno.options].some(o => o.value === anoCadastrado)) {
@@ -765,17 +2318,30 @@
     }
 
     function editarFerias(id) {
+        if (verificarTrocaSenhaObrigatoria()) {
+            abrirModalMinhaSenha(true);
+            return;
+        }
+
         const f = dbCache.ferias.find(item => item.id === id);
         if (!f) return;
 
+        if (!podeModificarRegistro(f)) {
+            return alert("Permissão negada: você só pode alterar registros cadastrados pelo seu próprio usuário.");
+        }
+
         editandoFeriasId = id;
-        document.getElementById('fColab').value = f.nome;
-        if (f.setor) document.getElementById('fSetor').value = f.setor;
-        if (f.subestacao) document.getElementById('fSubestacao').value = f.subestacao;
+        if (isAdmin()) {
+            popularSelectColaboradoresAdmin(f.titularLogin || f.criadoPorLogin, f.nome);
+            if (f.setor) document.getElementById('fSetor').value = f.setor;
+            if (f.subestacao) document.getElementById('fSubestacao').value = f.subestacao;
+        } else {
+            aplicarLotacaoUsuarioNoFormulario();
+        }
         document.getElementById('fDias').value = f.dias;
         document.getElementById('fInicio').value = extrairDataInput(f);
 
-        document.getElementById('tituloFormFerias').innerText = "Editando Período de Férias";
+        document.getElementById('tituloFormFerias').innerText = `Editando Férias de: ${f.nome}`;
         const btnSalvar = document.getElementById('btnSalvarFerias');
         btnSalvar.innerText = "Salvar Alterações";
         btnSalvar.classList.add('btn-edit-mode');
@@ -792,25 +2358,116 @@
 
     function limparFormularioFerias() {
         editandoFeriasId = null;
-        document.getElementById('fColab').value = '';
         document.getElementById('fDias').value = '';
+        document.getElementById('fColabOutro').value = '';
         document.getElementById('tituloFormFerias').innerText = "Cadastrar Período de Férias";
         const btnSalvar = document.getElementById('btnSalvarFerias');
         btnSalvar.innerText = "Adicionar Férias";
         btnSalvar.classList.remove('btn-edit-mode');
         document.getElementById('btnCancelarFerias').style.display = 'none';
+        aplicarLotacaoUsuarioNoFormulario();
     }
 
     async function removerFerias(id) {
-        if (!confirm("Remover este período de férias?")) return;
+        if (verificarTrocaSenhaObrigatoria()) {
+            abrirModalMinhaSenha(true);
+            return;
+        }
+
+        const alvo = dbCache.ferias.find(f => f.id === id);
+        if (!alvo) return;
+
+        if (!podeModificarRegistro(alvo)) {
+            return alert("Permissão negada: você só pode excluir registros cadastrados pelo seu próprio usuário.");
+        }
+
+        if (!confirm(`Remover o período de férias de ${alvo.nome}?`)) return;
+        
         if (editandoFeriasId === id) limparFormularioFerias();
         dbCache.ferias = dbCache.ferias.filter(f => f.id !== id);
+        registrarLog('EXCLUSÃO', `Removeu férias de ${alvo.nome} (${alvo.setor || 'S/S'} | ${alvo.subestacao || 'S/SE'}): ${alvo.inicioStr} até ${alvo.fimStr} (${alvo.dias}d)`);
+        
         await saveDB();
         renderFerias();
     }
 
     // ==========================================
-    // EXPORTAÇÃO (CSV / EXCEL) E IMPRESSÃO (PDF)
+    // MODAL DE AUDITORIA (EXPORTAR E LIMPAR EXCLUSIVOS DO ADMIN MASTER)
+    // ==========================================
+    function abrirModalAuditoria() {
+        if (!isAdmin()) {
+            return alert("Acesso restrito: apenas administradores podem visualizar a trilha de auditoria.");
+        }
+
+        const container = document.getElementById('listaLogsAuditoria');
+        const boxAcoesMaster = document.getElementById('acoesMasterAuditoria');
+        const logs = dbCache.logs || [];
+        
+        boxAcoesMaster.style.display = isMaster() ? 'flex' : 'none';
+
+        if (!logs.length) {
+            container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">Nenhuma ação registrada até o momento.</p>';
+        } else {
+            container.innerHTML = logs.map(l => `
+                <div class="log-item">
+                    <div class="log-top">
+                        <div>
+                            <span class="log-badge ${l.acao}">${l.acao}</span>
+                            <strong style="color:var(--alupar-blue); margin-left:6px;">👤 ${l.operador}</strong>
+                        </div>
+                        <small style="color:#64748b; font-weight:600;">🕒 ${l.dataHora}</small>
+                    </div>
+                    <div style="color:#334155; margin-top:2px;">${l.detalhes}</div>
+                </div>
+            `).join('');
+        }
+        document.getElementById('modalAuditoria').classList.add('open');
+    }
+
+    function fecharModalAuditoria() {
+        document.getElementById('modalAuditoria').classList.remove('open');
+    }
+
+    async function limparLogsAuditoria() {
+        if (!isMaster()) {
+            return alert("Acesso restrito: apenas o Administrador Master (alupar) pode limpar os logs da trilha de auditoria.");
+        }
+        if (!confirm("Deseja realmente apagar todo o histórico da trilha de auditoria?")) return;
+        dbCache.logs = [];
+        await saveDB();
+        abrirModalAuditoria();
+        renderFerias();
+    }
+
+    function exportarLogsCSV() {
+        if (!isMaster()) {
+            return alert("Acesso restrito: apenas o Administrador Master (alupar) pode exportar os logs da trilha de auditoria.");
+        }
+
+        const logs = dbCache.logs || [];
+        if (!logs.length) return alert("Não há logs para exportar.");
+
+        let csvContent = "\uFEFFData e Hora;Usuário Responsável;Ação;Detalhes da Operação\n";
+        logs.forEach(l => {
+            const op = `"${(l.operador || '').replace(/"/g, '""')}"`;
+            const acao = `"${(l.acao || '').replace(/"/g, '""')}"`;
+            const det = `"${(l.detalhes || '').replace(/"/g, '""')}"`;
+            csvContent += `"${l.dataHora}";${op};${acao};${det}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `auditoria_ferias_regional_nordeste.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // EXPORTAÇÃO (CSV / EXCEL) E IMPRESSÃO (PDF) - EXCLUSIVO ADMIN
     // ==========================================
     function verificarConflito(registroAtual, listaCompleta) {
         const conflitantes = listaCompleta.filter(outro => 
@@ -823,13 +2480,17 @@
     }
 
     function exportarCSV() {
+        if (!isAdmin()) {
+            return alert("Acesso restrito: apenas administradores podem exportar relatórios em Excel (CSV).");
+        }
+
         const listaParaExportar = obterListaFiltrada();
         if (!listaParaExportar || listaParaExportar.length === 0) {
             return showErrorFerias("Não há registros de férias no filtro atual para exportar.");
         }
 
         const listaOrdenada = [...listaParaExportar].sort((a, b) => a.inicioTimestamp - b.inicioTimestamp);
-        let csvContent = "\uFEFFColaborador;Setor;Subestação;Dias;Data de Início;Data de Término;Ano de Início;Status de Conflito\n";
+        let csvContent = "\uFEFFColaborador;Setor;Subestação;Dias;Data de Início;Data de Término;Ano de Início;Status de Conflito;Cadastrado Por;Data Cadastro;Última Edição Por;Data Edição\n";
 
         listaOrdenada.forEach(f => {
             const nomeLimpo = `"${(f.nome || '').replace(/"/g, '""')}"`;
@@ -837,8 +2498,12 @@
             const seLimpa = `"${(f.subestacao || 'NÃO INFORMADA').replace(/"/g, '""')}"`;
             const anoInicio = new Date(f.inicioTimestamp).getFullYear();
             const statusConflito = `"${verificarConflito(f, listaOrdenada)}"`;
+            const criadoPor = `"${(f.criadoPor || 'Registro anterior').replace(/"/g, '""')}"`;
+            const criadoEm = `"${(f.criadoEm || '-').replace(/"/g, '""')}"`;
+            const editadoPor = `"${(f.editadoPor || '-').replace(/"/g, '""')}"`;
+            const editadoEm = `"${(f.editadoEm || '-').replace(/"/g, '""')}"`;
             
-            csvContent += `${nomeLimpo};${setorLimpo};${seLimpa};${f.dias};${f.inicioStr};${f.fimStr};${anoInicio};${statusConflito}\n`;
+            csvContent += `${nomeLimpo};${setorLimpo};${seLimpa};${f.dias};${f.inicioStr};${f.fimStr};${anoInicio};${statusConflito};${criadoPor};${criadoEm};${editadoPor};${editadoEm}\n`;
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -855,6 +2520,9 @@
     }
 
     function imprimirRelatorio() {
+        if (!isAdmin()) {
+            return alert("Acesso restrito: apenas administradores podem imprimir ou exportar relatórios em PDF.");
+        }
         window.print();
     }
 
@@ -866,7 +2534,24 @@
         ld.innerHTML = '';
         
         const listaFiltrada = obterListaFiltrada();
+        const adminAtivo = isAdmin();
+        const qtdPendentes = (dbCache.solicitacoes || []).length;
+
         document.getElementById('contadorRegistros').innerText = `${listaFiltrada.length} registro(s)`;
+        document.getElementById('countLogs').innerText = (dbCache.logs || []).length;
+        document.getElementById('toolbarAdmin').style.display = adminAtivo ? 'flex' : 'none';
+
+        const bannerPendentes = document.getElementById('bannerSolicitacoesPendentes');
+        const badgePendentesBtn = document.getElementById('badgeCountPendentes');
+        if (adminAtivo && qtdPendentes > 0) {
+            bannerPendentes.style.display = 'flex';
+            document.getElementById('textoBannerSolicitacoes').innerHTML = `🔔 Há <strong>${qtdPendentes} solicitação(ões)</strong> de criação de usuário aguardando aprovação!`;
+            badgePendentesBtn.style.display = 'inline-block';
+            badgePendentesBtn.innerText = qtdPendentes;
+        } else {
+            bannerPendentes.style.display = 'none';
+            badgePendentesBtn.style.display = 'none';
+        }
 
         if (!listaFiltrada.length) {
             ld.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:15px 0;">Nenhuma féria encontrada para os filtros selecionados.</p>';
@@ -876,6 +2561,22 @@
                 const setorTxt = f.setor || 'SEM SETOR';
                 const seTxt = f.subestacao || 'SEM SE';
                 
+                let trilhaHtml = '';
+                if (adminAtivo) {
+                    if (f.criadoPor) {
+                        trilhaHtml += `Cadastrado por <strong>${f.criadoPor}</strong> em ${f.criadoEm}`;
+                    }
+                    if (f.editadoPor) {
+                        trilhaHtml += `${trilhaHtml ? ' • ' : ''}Editado por <strong>${f.editadoPor}</strong> em ${f.editadoEm}`;
+                    }
+                }
+
+                const temPermissao = podeModificarRegistro(f);
+                const botoesAcaoHtml = temPermissao
+                    ? `<button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️</button>
+                       <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Excluir">✖</button>`
+                    : `<span class="btn-icon locked" title="Registro protegido: somente o autor deste cadastro ou um Administrador pode alterá-lo">🔒</span>`;
+
                 ld.innerHTML += `
                     <div class="list-item ${isEditing}">
                         <div>
@@ -885,10 +2586,10 @@
                                 <span class="badge-meta badge-se">${seTxt}</span>
                             </div>
                             <small>${f.inicioStr} até ${f.fimStr} <strong>(${f.dias} dias)</strong></small>
+                            ${trilhaHtml ? `<span class="audit-meta-line">🛡️ ${trilhaHtml}</span>` : ''}
                         </div>
                         <div class="item-actions">
-                            <button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️</button>
-                            <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Excluir">✖</button>
+                            ${botoesAcaoHtml}
                         </div>
                     </div>`;
             });
