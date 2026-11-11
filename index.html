@@ -125,7 +125,7 @@
         .status-badge.andamento { background: var(--warning); }
         .status-badge.concluida { background: var(--success); }
 
-        /* GRÁFICO GANTT NOVO (TABELA DIÁRIA) */
+        /* GRÁFICO GANTT (TABELA DIÁRIA) */
         .gantt-container { margin-top: 30px; background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .gantt-title { text-align: center; color: var(--primary); margin-top: 0; }
         .gantt-table { border-collapse: collapse; width: max-content; min-width: 100%; }
@@ -146,14 +146,14 @@
             .ponto-container { padding: 15px; }
             .clock-box { font-size: 2.2em; padding: 15px; }
             .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-            table, thead, tbody, th, td, tr { display: block; }
-            thead tr { display: none; }
-            tr { border: 1px solid #eee; border-radius: 10px; margin-bottom: 15px; padding: 10px; }
-            td { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; border-bottom: 1px solid #f5f5f5; text-align: right; }
-            td:last-child { border-bottom: none; }
-            td::before { content: attr(data-label); font-weight: bold; text-transform: uppercase; font-size: 0.8em; color: #777; margin-right: 10px; text-align: left; }
-            td:nth-child(1)::before { display: none; }
-            td:nth-child(1) { justify-content: center; font-weight: bold; color: var(--primary); border-bottom: 2px solid var(--secondary); margin-bottom: 5px; padding-bottom: 10px; }
+            #page-ponto table, #page-ponto thead, #page-ponto tbody, #page-ponto th, #page-ponto td, #page-ponto tr { display: block; }
+            #page-ponto thead tr { display: none; }
+            #page-ponto tr { border: 1px solid #eee; border-radius: 10px; margin-bottom: 15px; padding: 10px; }
+            #page-ponto td { display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; border-bottom: 1px solid #f5f5f5; text-align: right; }
+            #page-ponto td:last-child { border-bottom: none; }
+            #page-ponto td::before { content: attr(data-label); font-weight: bold; text-transform: uppercase; font-size: 0.8em; color: #777; margin-right: 10px; text-align: left; }
+            #page-ponto td:nth-child(1)::before { display: none; }
+            #page-ponto td:nth-child(1) { justify-content: center; font-weight: bold; color: var(--primary); border-bottom: 2px solid var(--secondary); margin-bottom: 5px; padding-bottom: 10px; }
             .day-cell { min-height: 50px; font-size: 0.75em; }
         }
 
@@ -171,7 +171,7 @@
             <div class="form-group"><label>Usuário</label><input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username"></div>
             <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="Digite sua senha" autocomplete="current-password"></div>
             <div class="error-msg" id="loginError"></div>
-            <button class="main-btn" onclick="fazerLogin()">Entrar no Sistema</button>
+            <button class="main-btn" id="btnLogin" onclick="fazerLogin()">Entrar no Sistema</button>
         </div>
     </div>
 
@@ -277,95 +277,270 @@
 
 <script>
     // ==========================================
-    // BANCO DE DADOS (CREDENCIAIS JÁ INSERIDAS)
+    // BANCO DE DADOS (SINCRONIZAÇÃO CORRIGIDA)
     // ==========================================
     const BIN_ID = '6a7dd104da38895dfedfe24d'; 
     const API_KEY = '$2a$10$KMiP/Zy1E5f0NzxO2r4tcu24duXEofxlQ6S5ON2H0iJdaerfpjk86';
     const URL_DB = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
     let dbCache = { ponto: [], ferias: [], atividades: [] };
+    let dbCarregado = false;
 
     async function getDB() {
         try {
-            const res = await fetch(`${URL_DB}/latest`);
+            const res = await fetch(`${URL_DB}/latest`, {
+                headers: { 
+                    'X-Master-Key': API_KEY,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            if (!res.ok) throw new Error(`Status HTTP: ${res.status}`);
+            
             const json = await res.json();
-            dbCache = json.record;
-            if (!dbCache.ponto) dbCache.ponto = [];
-            if (!dbCache.ferias) dbCache.ferias = [];
-            if (!dbCache.atividades) dbCache.atividades = [];
+            if (json.record && typeof json.record === 'object') {
+                dbCache = {
+                    ponto: Array.isArray(json.record.ponto) ? json.record.ponto : [],
+                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias : [],
+                    atividades: Array.isArray(json.record.atividades) ? json.record.atividades : []
+                };
+                dbCarregado = true;
+            }
             return dbCache;
-        } catch (e) { console.error(e); return dbCache; }
+        } catch (e) {
+            console.error("Erro ao buscar banco:", e);
+            alert("Atenção: Não foi possível carregar os dados do servidor. Verifique sua conexão antes de salvar novos itens.");
+            return dbCache;
+        }
     }
 
     async function saveDB() {
+        if (!dbCarregado) {
+            alert("Sincronização pendente: o banco ainda não foi carregado do servidor. A gravação foi bloqueada para evitar perda de dados.");
+            return false;
+        }
+
         document.querySelectorAll('.main-btn').forEach(b => b.disabled = true);
         try {
-            await fetch(URL_DB, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY }, body: JSON.stringify(dbCache) });
-        } catch (e) { alert("Erro de conexão."); }
-        finally { document.querySelectorAll('.main-btn').forEach(b => b.disabled = false); }
+            const res = await fetch(URL_DB, { 
+                method: 'PUT', 
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-Master-Key': API_KEY,
+                    'X-Bin-Versioning': 'false'
+                }, 
+                body: JSON.stringify(dbCache) 
+            });
+            if (!res.ok) throw new Error(`Erro ao salvar: ${res.status}`);
+            return true;
+        } catch (e) { 
+            console.error("Erro na gravação:", e);
+            alert("Erro de conexão ao salvar os dados na nuvem."); 
+            return false;
+        } finally { 
+            document.querySelectorAll('.main-btn').forEach(b => b.disabled = false); 
+        }
     }
 
     // ==========================================
     // LOGIN & NAVEGAÇÃO
     // ==========================================
     function isLoggedIn() { return sessionStorage.getItem('etb_logged') === 'true'; }
-    function fazerLogin() {
-        const u = document.getElementById('loginUser').value.trim(), p = document.getElementById('loginPass').value.trim(), e = document.getElementById('loginError');
-        if (u === 'alupar' && p === 'nordeste') { sessionStorage.setItem('etb_logged', 'true'); e.style.opacity='0'; location.hash='#home'; }
-        else { e.innerText='Usuário ou senha incorretos.'; e.style.opacity='1'; setTimeout(()=>e.style.opacity='0', 3000); }
+    
+    async function fazerLogin() {
+        const u = document.getElementById('loginUser').value.trim();
+        const p = document.getElementById('loginPass').value.trim();
+        const e = document.getElementById('loginError');
+        const btn = document.getElementById('btnLogin');
+
+        if (u === 'alupar' && p === 'nordeste') { 
+            sessionStorage.setItem('etb_logged', 'true'); 
+            e.style.opacity = '0'; 
+            btn.disabled = true;
+            btn.innerText = 'Sincronizando banco...';
+            await getDB();
+            btn.disabled = false;
+            btn.innerText = 'Entrar no Sistema';
+            location.hash = '#home'; 
+        } else { 
+            e.innerText = 'Usuário ou senha incorretos.'; 
+            e.style.opacity = '1'; 
+            setTimeout(() => e.style.opacity = '0', 3000); 
+        }
     }
-    function fazerLogout() { sessionStorage.removeItem('etb_logged'); location.hash='#login'; }
-    document.addEventListener('keydown', e => { if(e.key==='Enter' && location.hash==='#login') fazerLogin(); });
+
+    function fazerLogout() { 
+        sessionStorage.removeItem('etb_logged'); 
+        dbCarregado = false;
+        location.hash = '#login'; 
+    }
+
+    document.addEventListener('keydown', e => { 
+        if (e.key === 'Enter' && location.hash === '#login') fazerLogin(); 
+    });
 
     async function navigate() {
-        if (!isLoggedIn() && location.hash !== '#login') { location.hash = '#login'; return; }
+        if (!isLoggedIn() && location.hash !== '#login') { 
+            location.hash = '#login'; 
+            return; 
+        }
+        if (isLoggedIn() && !dbCarregado) {
+            await getDB();
+        }
         const hash = location.hash || '#home';
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        if(hash === '#login') document.getElementById('page-login').classList.add('active');
-        else if(hash === '#home') document.getElementById('page-home').classList.add('active');
-        else if(hash === '#ponto') { document.getElementById('page-ponto').classList.add('active'); carregarHistorico(); }
-        else if(hash === '#ferias') { document.getElementById('page-ferias').classList.add('active'); renderFerias(); }
-        else if(hash === '#atividades') { document.getElementById('page-atividades').classList.add('active'); renderAtividades(); }
+        if (hash === '#login') document.getElementById('page-login').classList.add('active');
+        else if (hash === '#home') document.getElementById('page-home').classList.add('active');
+        else if (hash === '#ponto') { document.getElementById('page-ponto').classList.add('active'); carregarHistorico(); }
+        else if (hash === '#ferias') { document.getElementById('page-ferias').classList.add('active'); renderFerias(); }
+        else if (hash === '#atividades') { document.getElementById('page-atividades').classList.add('active'); renderAtividades(); }
     }
+
     window.addEventListener('hashchange', navigate);
     window.addEventListener('load', async () => {
-        if (isLoggedIn()) { await getDB(); if(location.hash==='#login'||location.hash==='') location.hash='#home'; }
-        else location.hash='#login';
+        if (isLoggedIn()) { 
+            await getDB(); 
+            if (location.hash === '#login' || location.hash === '') location.hash = '#home'; 
+        } else {
+            location.hash = '#login';
+        }
         navigate();
     });
 
     // ==========================================
     // PONTO
     // ==========================================
-    function atualizarRelogio() { const a=new Date(); document.getElementById('relogio').innerText=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`; }
-    setInterval(atualizarRelogio, 1000); atualizarRelogio();
-    function preencherHoraAgora(id) { const a=new Date(); document.getElementById(id).value=`${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}`; }
-    async function calcularESalvar() {
-        let e=document.getElementById('entrada').value, sa=document.getElementById('saidaAlmoco').value, ra=document.getElementById('retornoAlmoco').value;
-        if(!e||!sa||!ra) return showError("Preencha todos.");
-        let me=timeToMinutes(e), msa=timeToMinutes(sa), mra=timeToMinutes(ra), tm=msa-me;
-        if(tm<=0) return showError("Almoço deve ser depois da entrada.");
-        let hs=minutesToTime(mra + (528 - tm));
-        document.getElementById('horaSaidaCalculada').innerText=hs; document.getElementById('resultadoContainer').style.display='block';
-        dbCache.ponto.unshift({data:new Date().toLocaleDateString('pt-BR'),entrada:e,saidaAlmoco:sa,retornoAlmoco:ra,saidaFinal:hs});
-        if(dbCache.ponto.length>15) dbCache.ponto.pop();
-        await saveDB(); carregarHistorico();
+    function atualizarRelogio() { 
+        const a = new Date(); 
+        document.getElementById('relogio').innerText = `${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}:${String(a.getSeconds()).padStart(2,'0')}`; 
     }
-    function timeToMinutes(t){if(!t)return 0;let p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
-    function minutesToTime(m){return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
-    function showError(msg){const el=document.getElementById('errorMsg');el.innerText=msg;el.style.opacity='1';setTimeout(()=>el.style.opacity='0',3000);}
-    function carregarHistorico(){let tb=document.getElementById('tabelaHistorico');tb.innerHTML='';if(!dbCache.ponto.length)return tb.innerHTML='<tr><td colspan="5" style="color:#999;padding:20px">Vazio.</td></tr>';dbCache.ponto.forEach(i=>{let tr=document.createElement('tr');tr.innerHTML=`<td data-label="Data">${i.data}</td><td data-label="Ent">${i.entrada}</td><td data-label="Sai">${i.saidaAlmoco}</td><td data-label="Ret">${i.retornoAlmoco}</td><td data-label="Final"><strong>${i.saidaFinal}</strong></td>`;tb.appendChild(tr);});}
-    async function limparHistorico(){if(confirm("Apagar histórico?")){dbCache.ponto=[];await saveDB();carregarHistorico();}}
+    setInterval(atualizarRelogio, 1000); 
+    atualizarRelogio();
+
+    function preencherHoraAgora(id) { 
+        const a = new Date(); 
+        document.getElementById(id).value = `${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}`; 
+    }
+
+    async function calcularESalvar() {
+        let e = document.getElementById('entrada').value, 
+            sa = document.getElementById('saidaAlmoco').value, 
+            ra = document.getElementById('retornoAlmoco').value;
+        if (!e || !sa || !ra) return showError("Preencha todos.");
+        let me = timeToMinutes(e), msa = timeToMinutes(sa), mra = timeToMinutes(ra), tm = msa - me;
+        if (tm <= 0) return showError("Almoço deve ser depois da entrada.");
+        let hs = minutesToTime(mra + (528 - tm));
+        document.getElementById('horaSaidaCalculada').innerText = hs; 
+        document.getElementById('resultadoContainer').style.display = 'block';
+        dbCache.ponto.unshift({
+            data: new Date().toLocaleDateString('pt-BR'),
+            entrada: e,
+            saidaAlmoco: sa,
+            retornoAlmoco: ra,
+            saidaFinal: hs
+        });
+        if (dbCache.ponto.length > 15) dbCache.ponto.pop();
+        await saveDB(); 
+        carregarHistorico();
+    }
+
+    function timeToMinutes(t) { if (!t) return 0; let p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1]); }
+    function minutesToTime(m) { return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+    function showError(msg) { const el = document.getElementById('errorMsg'); el.innerText = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 3000); }
+    
+    function carregarHistorico() {
+        let tb = document.getElementById('tabelaHistorico');
+        tb.innerHTML = '';
+        if (!dbCache.ponto.length) return tb.innerHTML = '<tr><td colspan="5" style="color:#999;padding:20px">Vazio.</td></tr>';
+        dbCache.ponto.forEach(i => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td data-label="Data">${i.data}</td><td data-label="Ent">${i.entrada}</td><td data-label="Sai">${i.saidaAlmoco}</td><td data-label="Ret">${i.retornoAlmoco}</td><td data-label="Final"><strong>${i.saidaFinal}</strong></td>`;
+            tb.appendChild(tr);
+        });
+    }
+
+    async function limparHistorico() {
+        if (confirm("Apagar histórico?")) {
+            dbCache.ponto = [];
+            await saveDB();
+            carregarHistorico();
+        }
+    }
 
     // ==========================================
     // FERIAS
     // ==========================================
-    const MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-    const DIAS_SEMANA=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-    function showErrorFerias(msg){const el=document.getElementById('errorMsgFerias');el.innerText=msg;el.style.opacity='1';setTimeout(()=>el.style.opacity='0',3000);}
-    async function adicionarFerias(){let n=document.getElementById('fColab').value.trim(),d=parseInt(document.getElementById('fDias').value),i=document.getElementById('fInicio').value;if(!n||!d||!i)return showErrorFerias("Preencha tudo.");if(d<1||d>30)return showErrorFerias("Máx 30 dias.");let id=new Date(i+"T00:00:00"),fd=new Date(id);fd.setDate(fd.getDate()+d-1);dbCache.ferias.push({id:Date.now(),nome:n,dias:d,inicioStr:id.toLocaleDateString('pt-BR'),fimStr:fd.toLocaleDateString('pt-BR'),inicioTimestamp:id.getTime(),fimTimestamp:fd.getTime()});document.getElementById('fColab').value='';document.getElementById('fDias').value='';await saveDB();renderFerias();}
-    async function removerFerias(id){if(!confirm("Remover?"))return;dbCache.ferias=dbCache.ferias.filter(f=>f.id!==id);await saveDB();renderFerias();}
-    function renderFerias(){let ld=document.getElementById('listaFerias');ld.innerHTML='';if(!dbCache.ferias.length)ld.innerHTML='<p style="color:#999;text-align:center">Nenhuma féria.</p>';else dbCache.ferias.sort((a,b)=>a.inicioTimestamp-b.inicioTimestamp).forEach(f=>{ld.innerHTML+=`<div class="list-item"><div><strong>${f.nome}</strong> (${f.dias}d)<br><small>${f.inicioStr} até ${f.fimStr}</small></div><button onclick="removerFerias(${f.id})">✖</button></div>`;});let c=document.getElementById('calendariosContainer');c.innerHTML='';gerarAno(parseInt(document.getElementById('anoSelecionado').value),dbCache.ferias,c);}
-    function gerarAno(ano,ferias,container){for(let m=0;m<12;m++){let box=document.createElement('div');box.className='calendar-box';box.innerHTML=`<div class="calendar-header">${MESES[m]} ${ano}</div>`;let g=document.createElement('div');g.className='calendar-days';DIAS_SEMANA.forEach(d=>g.innerHTML+=`<div class="day-name">${d}</div>`);let pds=new Date(ano,m,1).getDay();for(let i=0;i<pds;i++)g.innerHTML+='<div class="day-cell"></div>';let qtd=new Date(ano,m+1,0).getDate();for(let d=1;d<=qtd;d++){let dt=new Date(ano,m,d).getTime(),ef=ferias.filter(f=>dt>=f.inicioTimestamp&&dt<=f.fimTimestamp),cc='day-cell';if(ef.length>0)cc+=ef.length>1?' overlap':' has-vacation';let th=ef.map(f=>`<div class="vacation-tag" title="${f.nome}">${f.nome.split(' ')[0]}</div>`).join('');g.innerHTML+=`<div class="${cc}"><div class="day-num">${d}</div>${th}</div>`;}box.appendChild(g);container.appendChild(box);}}
+    const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const DIAS_SEMANA = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    
+    function showErrorFerias(msg) { const el = document.getElementById('errorMsgFerias'); el.innerText = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 3000); }
+    
+    async function adicionarFerias() {
+        let n = document.getElementById('fColab').value.trim(),
+            d = parseInt(document.getElementById('fDias').value),
+            i = document.getElementById('fInicio').value;
+        if (!n || !d || !i) return showErrorFerias("Preencha tudo.");
+        if (d < 1 || d > 30) return showErrorFerias("Máx 30 dias.");
+        let id = new Date(i + "T00:00:00"), fd = new Date(id);
+        fd.setDate(fd.getDate() + d - 1);
+        dbCache.ferias.push({
+            id: Date.now(),
+            nome: n,
+            dias: d,
+            inicioStr: id.toLocaleDateString('pt-BR'),
+            fimStr: fd.toLocaleDateString('pt-BR'),
+            inicioTimestamp: id.getTime(),
+            fimTimestamp: fd.getTime()
+        });
+        document.getElementById('fColab').value = '';
+        document.getElementById('fDias').value = '';
+        await saveDB();
+        renderFerias();
+    }
+
+    async function removerFerias(id) {
+        if (!confirm("Remover?")) return;
+        dbCache.ferias = dbCache.ferias.filter(f => f.id !== id);
+        await saveDB();
+        renderFerias();
+    }
+
+    function renderFerias() {
+        let ld = document.getElementById('listaFerias');
+        ld.innerHTML = '';
+        if (!dbCache.ferias.length) {
+            ld.innerHTML = '<p style="color:#999;text-align:center">Nenhuma féria.</p>';
+        } else {
+            dbCache.ferias.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
+                ld.innerHTML += `<div class="list-item"><div><strong>${f.nome}</strong> (${f.dias}d)<br><small>${f.inicioStr} até ${f.fimStr}</small></div><button onclick="removerFerias(${f.id})">✖</button></div>`;
+            });
+        }
+        let c = document.getElementById('calendariosContainer');
+        c.innerHTML = '';
+        gerarAno(parseInt(document.getElementById('anoSelecionado').value), dbCache.ferias, c);
+    }
+
+    function gerarAno(ano, ferias, container) {
+        for (let m = 0; m < 12; m++) {
+            let box = document.createElement('div');
+            box.className = 'calendar-box';
+            box.innerHTML = `<div class="calendar-header">${MESES[m]} ${ano}</div>`;
+            let g = document.createElement('div');
+            g.className = 'calendar-days';
+            DIAS_SEMANA.forEach(d => g.innerHTML += `<div class="day-name">${d}</div>`);
+            let pds = new Date(ano, m, 1).getDay();
+            for (let i = 0; i < pds; i++) g.innerHTML += '<div class="day-cell"></div>';
+            let qtd = new Date(ano, m + 1, 0).getDate();
+            for (let d = 1; d <= qtd; d++) {
+                let dt = new Date(ano, m, d).getTime(),
+                    ef = ferias.filter(f => dt >= f.inicioTimestamp && dt <= f.fimTimestamp),
+                    cc = 'day-cell';
+                if (ef.length > 0) cc += ef.length > 1 ? ' overlap' : ' has-vacation';
+                let th = ef.map(f => `<div class="vacation-tag" title="${f.nome}">${f.nome.split(' ')[0]}</div>`).join('');
+                g.innerHTML += `<div class="${cc}"><div class="day-num">${d}</div>${th}</div>`;
+            }
+            box.appendChild(g);
+            container.appendChild(box);
+        }
+    }
 
     // ==========================================
     // ATIVIDADES
@@ -373,84 +548,143 @@
     let editandoAtvId = null;
 
     function toggleTech(el) { el.classList.toggle('selected'); }
-    function getTecnicosSelected() { let s=[]; document.querySelectorAll('.tech-btn.selected').forEach(b=>s.push(b.dataset.tech)); return s; }
-    function setTecnicosSelected(arr) { document.querySelectorAll('.tech-btn').forEach(b=>{ if(arr.includes(b.dataset.tech)) b.classList.add('selected'); else b.classList.remove('selected'); }); }
+    function getTecnicosSelected() { let s = []; document.querySelectorAll('.tech-btn.selected').forEach(b => s.push(b.dataset.tech)); return s; }
+    function setTecnicosSelected(arr) { document.querySelectorAll('.tech-btn').forEach(b => { if (arr.includes(b.dataset.tech)) b.classList.add('selected'); else b.classList.remove('selected'); }); }
     
     function calcularDiasAtv() {
-        let di=document.getElementById('aDataInicio').value, df=document.getElementById('aDataFim').value, el=document.getElementById('aDiasCalc');
-        if(di&&df){let s=new Date(di+"T00:00:00"),e=new Date(df+"T00:00:00"),diff=Math.ceil((e-s)/(1000*60*60*24))+1;el.innerText=`Duração: ${diff} dia(s)`;}else{el.innerText='';}
+        let di = document.getElementById('aDataInicio').value, 
+            df = document.getElementById('aDataFim').value, 
+            el = document.getElementById('aDiasCalc');
+        if (di && df) {
+            let s = new Date(di + "T00:00:00"), e = new Date(df + "T00:00:00"), diff = Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1;
+            el.innerText = `Duração: ${diff} dia(s)`;
+        } else {
+            el.innerText = '';
+        }
     }
-    function showErrorAtv(msg){const el=document.getElementById('errorMsgAtv');el.innerText=msg;el.style.opacity='1';setTimeout(()=>el.style.opacity='0',3000);}
+
+    function showErrorAtv(msg) { const el = document.getElementById('errorMsgAtv'); el.innerText = msg; el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 3000); }
     
     function validarStatusAutomatico(atv) {
-        if(atv.status === 'Concluída') return 'Concluída';
-        let hoje = new Date(); hoje.setHours(0,0,0,0);
-        let fim = new Date(atv.dataFim+"T00:00:00");
+        if (atv.status === 'Concluída') return 'Concluída';
+        let hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        let fim = new Date(atv.dataFim + "T00:00:00");
         return fim < hoje ? 'Atrasada' : 'Em Andamento';
     }
 
     async function salvarAtividade() {
-        let titulo=document.getElementById('aTitulo').value.trim(), tecnicos=getTecnicosSelected(), di=document.getElementById('aDataInicio').value, df=document.getElementById('aDataFim').value, sm=document.getElementById('aStatus').value;
-        if(!titulo||!tecnicos.length||!di||!df) return showErrorAtv("Preencha título, técnicos e datas.");
-        if(new Date(df)<new Date(di)) return showErrorAtv("Data fim menor que início.");
+        let titulo = document.getElementById('aTitulo').value.trim(), 
+            tecnicos = getTecnicosSelected(), 
+            di = document.getElementById('aDataInicio').value, 
+            df = document.getElementById('aDataFim').value, 
+            sm = document.getElementById('aStatus').value;
+        if (!titulo || !tecnicos.length || !di || !df) return showErrorAtv("Preencha título, técnicos e datas.");
+        if (new Date(df) < new Date(di)) return showErrorAtv("Data fim menor que início.");
         
-        let dados={titulo,tecnicos,dataInicio:di,dataFim:df,status:sm};
-        if(editandoAtvId){let idx=dbCache.atividades.findIndex(a=>a.id===editandoAtvId);if(idx!==-1)dbCache.atividades[idx]={...dbCache.atividades[idx],...dados};editandoAtvId=null;document.getElementById('btnSalvarAtv').innerText="Cadastrar Atividade";document.getElementById('btnSalvarAtv').classList.remove('btn-edit-mode');document.getElementById('btnCancelarEdit').style.display='none';document.getElementById('tituloFormAtv').innerText="Nova Atividade";}
-        else{dbCache.atividades.push({id:Date.now(),...dados});}
+        let dados = { titulo, tecnicos, dataInicio: di, dataFim: df, status: sm };
+        if (editandoAtvId) {
+            let idx = dbCache.atividades.findIndex(a => a.id === editandoAtvId);
+            if (idx !== -1) dbCache.atividades[idx] = { ...dbCache.atividades[idx], ...dados };
+            editandoAtvId = null;
+            document.getElementById('btnSalvarAtv').innerText = "Cadastrar Atividade";
+            document.getElementById('btnSalvarAtv').classList.remove('btn-edit-mode');
+            document.getElementById('btnCancelarEdit').style.display = 'none';
+            document.getElementById('tituloFormAtv').innerText = "Nova Atividade";
+        } else {
+            dbCache.atividades.push({ id: Date.now(), ...dados });
+        }
         
-        document.getElementById('aTitulo').value='';setTecnicosSelected([]);document.getElementById('aDataInicio').value='';document.getElementById('aDataFim').value='';document.getElementById('aStatus').value='Em Andamento';document.getElementById('aDiasCalc').innerText='';
-        await saveDB(); renderAtividades();
+        document.getElementById('aTitulo').value = '';
+        setTecnicosSelected([]);
+        document.getElementById('aDataInicio').value = '';
+        document.getElementById('aDataFim').value = '';
+        document.getElementById('aStatus').value = 'Em Andamento';
+        document.getElementById('aDiasCalc').innerText = '';
+        await saveDB(); 
+        renderAtividades();
     }
 
     function editarAtividade(id) {
-        let atv=dbCache.atividades.find(a=>a.id===id); if(!atv)return;
-        editandoAtvId=id; document.getElementById('aTitulo').value=atv.titulo; setTecnicosSelected(atv.tecnicos);
-        document.getElementById('aDataInicio').value=atv.dataInicio; document.getElementById('aDataFim').value=atv.dataFim;
-        document.getElementById('aStatus').value=atv.status==='Atrasada'?'Em Andamento':atv.status;
+        let atv = dbCache.atividades.find(a => a.id === id); 
+        if (!atv) return;
+        editandoAtvId = id; 
+        document.getElementById('aTitulo').value = atv.titulo; 
+        setTecnicosSelected(atv.tecnicos);
+        document.getElementById('aDataInicio').value = atv.dataInicio; 
+        document.getElementById('aDataFim').value = atv.dataFim;
+        document.getElementById('aStatus').value = atv.status === 'Atrasada' ? 'Em Andamento' : atv.status;
         calcularDiasAtv();
-        document.getElementById('btnSalvarAtv').innerText="Salvar Alterações";document.getElementById('btnSalvarAtv').classList.add('btn-edit-mode');document.getElementById('btnCancelarEdit').style.display='block';document.getElementById('tituloFormAtv').innerText="Editando Atividade";
-        document.getElementById('tituloFormAtv').scrollIntoView({behavior:'smooth'});
+        document.getElementById('btnSalvarAtv').innerText = "Salvar Alterações";
+        document.getElementById('btnSalvarAtv').classList.add('btn-edit-mode');
+        document.getElementById('btnCancelarEdit').style.display = 'block';
+        document.getElementById('tituloFormAtv').innerText = "Editando Atividade";
+        document.getElementById('tituloFormAtv').scrollIntoView({ behavior: 'smooth' });
     }
 
     function cancelarEdicaoAtv() {
-        editandoAtvId=null;document.getElementById('btnSalvarAtv').innerText="Cadastrar Atividade";document.getElementById('btnSalvarAtv').classList.remove('btn-edit-mode');document.getElementById('btnCancelarEdit').style.display='none';document.getElementById('tituloFormAtv').innerText="Nova Atividade";document.getElementById('aTitulo').value='';setTecnicosSelected([]);document.getElementById('aDataInicio').value='';document.getElementById('aDataFim').value='';document.getElementById('aDiasCalc').innerText='';
+        editandoAtvId = null;
+        document.getElementById('btnSalvarAtv').innerText = "Cadastrar Atividade";
+        document.getElementById('btnSalvarAtv').classList.remove('btn-edit-mode');
+        document.getElementById('btnCancelarEdit').style.display = 'none';
+        document.getElementById('tituloFormAtv').innerText = "Nova Atividade";
+        document.getElementById('aTitulo').value = '';
+        setTecnicosSelected([]);
+        document.getElementById('aDataInicio').value = '';
+        document.getElementById('aDataFim').value = '';
+        document.getElementById('aDiasCalc').innerText = '';
     }
 
-    async function excluirAtividade(id){if(!confirm("Excluir esta atividade?"))return;dbCache.atividades=dbCache.atividades.filter(a=>a.id!==id);await saveDB();renderAtividades();}
-    async function concluirAtividade(id){let idx=dbCache.atividades.findIndex(a=>a.id===id);if(idx!==-1)dbCache.atividades[idx].status='Concluída';await saveDB();renderAtividades();}
+    async function excluirAtividade(id) {
+        if (!confirm("Excluir esta atividade?")) return;
+        dbCache.atividades = dbCache.atividades.filter(a => a.id !== id);
+        await saveDB();
+        renderAtividades();
+    }
+
+    async function concluirAtividade(id) {
+        let idx = dbCache.atividades.findIndex(a => a.id === id);
+        if (idx !== -1) dbCache.atividades[idx].status = 'Concluída';
+        await saveDB();
+        renderAtividades();
+    }
 
     function renderAtividades() {
         let lista = dbCache.atividades;
-        let concluidas=0, atrasadas=0;
-        lista.forEach(atv=>{ atv.statusReal=validarStatusAutomatico(atv); if(atv.statusReal==='Concluída')concluidas++; else if(atv.statusReal==='Atrasada')atrasadas++; });
+        let concluidas = 0, atrasadas = 0;
+        lista.forEach(atv => { 
+            atv.statusReal = validarStatusAutomatico(atv); 
+            if (atv.statusReal === 'Concluída') concluidas++; 
+            else if (atv.statusReal === 'Atrasada') atrasadas++; 
+        });
         
-        document.getElementById('dashTotal').innerText=lista.length;
-        document.getElementById('dashAndamento').innerText=lista.length-concluidas-atrasadas;
-        document.getElementById('dashAtrasada').innerText=atrasadas;
-        document.getElementById('dashConcluida').innerText=concluidas;
+        document.getElementById('dashTotal').innerText = lista.length;
+        document.getElementById('dashAndamento').innerText = lista.length - concluidas - atrasadas;
+        document.getElementById('dashAtrasada').innerText = atrasadas;
+        document.getElementById('dashConcluida').innerText = concluidas;
 
-        let containerLista=document.getElementById('listaAtividades'); containerLista.innerHTML='';
+        let containerLista = document.getElementById('listaAtividades'); 
+        containerLista.innerHTML = '';
         
-        if(!lista.length){containerLista.innerHTML='<p style="text-align:center;color:#999;">Nenhuma atividade cadastrada.</p>';}
-        else{
-            // ORDEM: Não concluídas primeiro (por data de início crescente), depois concluídas
-            let listaOrdenada=[...lista].sort((a,b)=>{
-                let sa=a.statusReal==='Concluída'?1:0, sb=b.statusReal==='Concluída'?1:0;
-                if(sa!==sb) return sa-sb; // Joga concluídas pro fundo
-                return new Date(a.dataInicio)-new Date(b.dataInicio); // Mais proxima primeiro
+        if (!lista.length) {
+            containerLista.innerHTML = '<p style="text-align:center;color:#999;">Nenhuma atividade cadastrada.</p>';
+        } else {
+            let listaOrdenada = [...lista].sort((a, b) => {
+                let sa = a.statusReal === 'Concluída' ? 1 : 0, sb = b.statusReal === 'Concluída' ? 1 : 0;
+                if (sa !== sb) return sa - sb;
+                return new Date(a.dataInicio) - new Date(b.dataInicio);
             });
 
-            listaOrdenada.forEach(atv=>{
-                let di=new Date(atv.dataInicio+"T00:00:00"), df=new Date(atv.dataFim+"T00:00:00");
-                let dias=Math.ceil((df-di)/(1000*60*60*24))+1;
-                let classeCss=atv.statusReal==='Atrasada'?'atrasada':(atv.statusReal==='Concluída'?'concluida':'');
+            listaOrdenada.forEach(atv => {
+                let di = new Date(atv.dataInicio + "T00:00:00"), df = new Date(atv.dataFim + "T00:00:00");
+                let dias = Math.ceil((df - di) / (1000 * 60 * 60 * 24)) + 1;
+                let classeCss = atv.statusReal === 'Atrasada' ? 'atrasada' : (atv.statusReal === 'Concluída' ? 'concluida' : 'andamento');
                 
-                let acoesHtml='';
-                if(atv.statusReal!=='Concluída') acoesHtml+=`<button class="btn-action success" onclick="concluirAtividade(${atv.id})">Concluir</button>`;
-                acoesHtml+=`<button class="btn-action warning" onclick="editarAtividade(${atv.id})">Editar</button>`;
-                acoesHtml+=`<button class="btn-action danger" onclick="excluirAtividade(${atv.id})">Excluir</button>`;
+                let acoesHtml = '';
+                if (atv.statusReal !== 'Concluída') acoesHtml += `<button class="btn-action success" onclick="concluirAtividade(${atv.id})">Concluir</button>`;
+                acoesHtml += `<button class="btn-action warning" onclick="editarAtividade(${atv.id})">Editar</button>`;
+                acoesHtml += `<button class="btn-action danger" onclick="excluirAtividade(${atv.id})">Excluir</button>`;
 
-                containerLista.innerHTML+=`
+                containerLista.innerHTML += `
                     <div class="atividade-list-item ${classeCss}">
                         <div style="margin-bottom:10px;"><strong style="color:var(--primary); font-size:1.1em;">${atv.titulo}</strong> <span class="status-badge ${classeCss}">${atv.statusReal}</span></div>
                         <div class="atv-info-grid">
@@ -468,33 +702,39 @@
 
     function renderGantt(lista) {
         let area = document.getElementById('ganttChartArea');
-        // Filtra apenas ativas para o gráfico
-        let ativas = lista.filter(a => validarStatusAutomatico(a) !== 'Concluída').sort((a,b) => new Date(a.dataInicio) - new Date(b.dataInicio));
+        let ativas = lista.filter(a => validarStatusAutomatico(a) !== 'Concluída').sort((a, b) => new Date(a.dataInicio) - new Date(b.dataInicio));
         
-        if(!ativas.length) { area.innerHTML = '<p style="text-align:center; color:#999">Nenhuma atividade em aberto para o cronograma.</p>'; return; }
+        if (!ativas.length) { 
+            area.innerHTML = '<p style="text-align:center; color:#999">Nenhuma atividade em aberto para o cronograma.</p>'; 
+            return; 
+        }
 
-        // Encontrar limites de tempo
-        let minD = new Date(ativas[0].dataInicio+"T00:00:00");
-        let maxD = new Date(ativas[0].dataFim+"T00:00:00");
+        let minD = new Date(ativas[0].dataInicio + "T00:00:00");
+        let maxD = new Date(ativas[0].dataFim + "T00:00:00");
         ativas.forEach(a => {
-            let s = new Date(a.dataInicio+"T00:00:00"), e = new Date(a.dataFim+"T00:00:00");
-            if(s < minD) minD = s; if(e > maxD) maxD = e;
+            let s = new Date(a.dataInicio + "T00:00:00"), e = new Date(a.dataFim + "T00:00:00");
+            if (s < minD) minD = s; 
+            if (e > maxD) maxD = e;
         });
 
-        // Gerar array de todos os dias
         let dias = [];
         let current = new Date(minD);
-        while(current <= maxD) { dias.push(new Date(current)); current.setDate(current.getDate() + 1); }
+        while (current <= maxD) { 
+            dias.push(new Date(current)); 
+            current.setDate(current.getDate() + 1); 
+        }
 
         let hojeStr = new Date().toDateString();
 
         let html = '<table class="gantt-table"><thead><tr><th class="gantt-task-header">Atividade</th>';
-        dias.forEach(d => { html += `<th class="gantt-day-header">${d.getDate()}<br><span style="font-size:0.8em; font-weight:normal">${(d.getMonth()+1).toString().padStart(2,'0')}</span></th>`; });
+        dias.forEach(d => { 
+            html += `<th class="gantt-day-header">${d.getDate()}<br><span style="font-size:0.8em; font-weight:normal">${(d.getMonth() + 1).toString().padStart(2, '0')}</span></th>`; 
+        });
         html += '</tr></thead><tbody>';
 
         ativas.forEach(atv => {
-            let start = new Date(atv.dataInicio+"T00:00:00");
-            let end = new Date(atv.dataFim+"T00:00:00");
+            let start = new Date(atv.dataInicio + "T00:00:00");
+            let end = new Date(atv.dataFim + "T00:00:00");
             let status = validarStatusAutomatico(atv);
             
             html += `<tr><td class="gantt-task-name">${atv.titulo}</td>`;
@@ -512,9 +752,8 @@
         html += '</tbody></table>';
         area.innerHTML = html;
         
-        // Rolar automaticamente para a coluna "Hoje" no gráfico
         let hojeCol = area.querySelector('.gantt-today');
-        if(hojeCol) hojeCol.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        if (hojeCol) hojeCol.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
 </script>
 </body>
