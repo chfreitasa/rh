@@ -1186,35 +1186,10 @@
 // =====================================================================
 // GESTÃO DE FÉRIAS - REGIONAL NORDESTE (ALUPAR) - VERSÃO SEGURA PARA
 // PUBLICAÇÃO ESTÁTICA (GITHUB PAGES + CLOUDFLARE WORKER + JSONBIN)
-// ---------------------------------------------------------------------
-// COMO PUBLICAR (resumo das etapas):
-//   1) Cloudflare Workers: crie um Worker, cole o conteúdo de worker.js e
-//      defina as variáveis JSONBIN_BIN_ID, JSONBIN_MASTER_KEY, SETUP_TOKEN,
-//      TOKEN_SECRET e ALLOWED_ORIGIN (instruções no topo do worker.js).
-//   2) Neste arquivo, troque o valor de API_URL (busque "EDITE AQUI 2/2")
-//      e atualize também o domínio na meta tag Content-Security-Policy
-//      no cabeçalho do HTML ("EDITE AQUI 1/2").
-//   3) Publique o index.html no GitHub Pages. Depois acesse uma única vez
-//      o endereço  https://seu-site.github.io/#configuracao  para criar ou
-//      migrar os usuários: as senhas viram hash PBKDF2 no seu navegador e
-//      nunca trafegam nem ficam armazenadas em texto puro.
-// ---------------------------------------------------------------------
-// MEDIDAS DE SEGURANÇA APLICADAS:
-//   - Segredo da API (JSONBin) retirado do cliente; o navegador só fala
-//     com o Worker, que guarda a chave no servidor.
-//   - Senhas com hash PBKDF2-SHA256 (150.000 iterações, salt aleatório
-//     por usuário). Nenhuma senha em texto puro no código-fonte ou no banco.
-//   - Toda saída dinâmica passa por escapeHtml() (proteção contra XSS).
-//   - Sessão por token assinado (HMAC-SHA256) com expiração, emitido pelo
-//     Worker; permissões (admin/master) são revalidadas no servidor a cada
-//     gravação - editá-las no navegador não dá acesso algum.
-//   - Rate limiting de login e de solicitações de acesso.
-//   - Validação e limite de tamanho de todos os dados gravados.
-//   - Content-Security-Policy, frame-buster e zoom liberado (WCAG).
 // =====================================================================
 
-
-const API_URL = 'https://ferias-alupar.alencarcarlos001.workers.dev'; // ex.: https://ferias-alupar.sua-conta.workers.dev
+/* >>> URL DO CLOUDFLARE WORKER CONFIGURADA <<< */
+const API_URL = 'https://ferias-alupar.alencarcarlos001.workers.dev';
 
 const ITERACOES_PBKDF2 = 150000;
 const LISTA_SETORES = ['TELECOM', 'SPCS', 'OPERAÇÃO', 'EAT', 'LT'];
@@ -1231,7 +1206,6 @@ let editandoFeriasId = null;
 // UTILIDADES DE SEGURANÇA
 // ==========================================
 
-// Escapa texto antes de inserir em innerHTML (proteção contra XSS)
 function escapeHtml(valor) {
     return String(valor === null || valor === undefined ? '' : valor)
         .replace(/&/g, '&amp;')
@@ -1257,7 +1231,6 @@ function gerarSaltHex() {
     return bytesParaHex(bytes);
 }
 
-// Deriva o hash PBKDF2-SHA256 da senha (a senha em si nunca é armazenada nem enviada)
 async function derivarHash(senha, saltHex, iteracoes) {
     const enc = new TextEncoder();
     const chave = await crypto.subtle.importKey('raw', enc.encode(senha), 'PBKDF2', false, ['deriveBits']);
@@ -1278,7 +1251,7 @@ function verificarConfiguracao() {
     if (!aviso) return;
     if (!configOk()) {
         aviso.style.display = 'block';
-        aviso.innerHTML = '<strong>Configuração pendente:</strong> edite o arquivo index.html e informe a URL do seu Cloudflare Worker no campo API_URL (busque por "EDITE AQUI 2/2"). Atualize também o domínio do Worker na meta tag Content-Security-Policy ("EDITE AQUI 1/2"). Instruções completas no topo do arquivo worker.js.';
+        aviso.innerHTML = '<strong>Configuração pendente:</strong> edite o arquivo index.html e informe a URL do seu Cloudflare Worker no campo API_URL.';
     } else {
         aviso.style.display = 'none';
     }
@@ -1329,7 +1302,6 @@ function encerrarSessao(mensagem) {
     fazerLogout();
 }
 
-// Cliente HTTP da API do Worker
 async function apiFetch(caminho, opcoes = {}) {
     const { metodo = 'GET', corpo = null, comToken = true, headersExtra = null } = opcoes;
     const headers = {};
@@ -1453,7 +1425,7 @@ function registrarLog(acao, detalhes, operadorCustom = null) {
 }
 
 // ==========================================
-// MAPA DE USUÁRIOS (agora vive 100% no banco - sem senhas no código)
+// MAPA DE USUÁRIOS
 // ==========================================
 
 function obterMapaUsuarios() {
@@ -1470,7 +1442,6 @@ function obterMapaUsuarios() {
             subestacao: u.subestacao || 'SE JZT'
         };
     });
-    // Convenção do sistema: o login 'alupar' é sempre o Administrador Master
     if (mapa['alupar']) mapa['alupar'].role = 'master';
     return mapa;
 }
@@ -1514,7 +1485,6 @@ function mostrarPagina(idPagina) {
 }
 
 async function navigate() {
-    // Tela de configuração/migração (uso exclusivo do responsável; o Worker exige o Token de Configuração)
     if (location.hash === '#configuracao') {
         mostrarPagina('page-config');
         return;
@@ -1533,7 +1503,6 @@ async function navigate() {
         await getDB();
     }
 
-    // Sincroniza o perfil exibido com os dados oficiais do banco
     const mapa = obterMapaUsuarios();
     const meuLogin = obterLoginAtual();
     if (mapa[meuLogin]) {
@@ -1600,14 +1569,11 @@ async function fazerLogin() {
     e.innerText = '';
 
     try {
-        // 1) Busca o salt público do usuário (salt fictício se não existir, sem revelar existência)
         const saltRes = await apiFetch('/api/salt?u=' + encodeURIComponent(u), { comToken: false });
         if (!saltRes.ok || !saltRes.dados || !saltRes.dados.s) {
             throw new Error('Servidor indisponível.');
         }
-        // 2) Deriva a chave da senha no navegador (a senha em si nunca é enviada)
         const k = await derivarHash(p, saltRes.dados.s, saltRes.dados.it || ITERACOES_PBKDF2);
-        // 3) Envia apenas a chave derivada e recebe o token de sessão assinado
         const r = await apiFetch('/api/login', { metodo: 'POST', corpo: { u: u, k: k }, comToken: false });
 
         if (r.ok && r.dados && r.dados.token) {
@@ -1680,7 +1646,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ==========================================
-// ALTERAÇÃO DA PRÓPRIA SENHA (hash gerado no navegador)
+// ALTERAÇÃO DA PRÓPRIA SENHA
 // ==========================================
 
 function abrirModalMinhaSenha(obrigatoria = false) {
@@ -1751,7 +1717,6 @@ async function salvarMinhaNovaSenha() {
         return;
     }
 
-    // Confere a senha atual comparando hashes (a senha em texto puro não é armazenada)
     if (conta.hash) {
         const tentativa = await derivarHash(atual, conta.hash.s, conta.hash.it || ITERACOES_PBKDF2);
         if (tentativa !== conta.hash.k) {
@@ -1794,7 +1759,7 @@ async function salvarMinhaNovaSenha() {
         senhaAlteradaPeloUsuario: true,
         ultimaTrocaSenhaEm: formatarDataHoraAtual()
     };
-    delete dbCache.usuarios[meuLogin].pass; // remove qualquer senha legada em texto puro
+    delete dbCache.usuarios[meuLogin].pass;
 
     registrarLog('SENHA', `O usuário "${meuLogin}" (${conta.label}) definiu uma nova senha pessoal.`);
     const ok = await saveDB();
@@ -1805,14 +1770,13 @@ async function salvarMinhaNovaSenha() {
             document.getElementById('modalMinhaSenha').classList.remove('open');
         }, 900);
     } else {
-        // Reverte a alteração local para manter o cache igual ao servidor
         await getDB();
         renderFerias();
     }
 }
 
 // ==========================================
-// AUTO-CADASTRO NA TELA DE LOGIN (o servidor valida, detecta duplicidade e grava)
+// AUTO-CADASTRO NA TELA DE LOGIN
 // ==========================================
 
 function alternarTelaCadastroLogin(mostrarCadastro) {
@@ -1881,9 +1845,6 @@ async function enviarSolicitacaoCadastro() {
 
 // ==========================================
 // TELA DE CONFIGURAÇÃO / MIGRAÇÃO (#configuracao)
-// Uso exclusivo do responsável: exige o Token de Configuração definido no Worker.
-// As senhas informadas aqui viram hash PBKDF2 neste navegador e nunca
-// ficam em texto puro no banco.
 // ==========================================
 
 let setupBootUsuarios = {};
@@ -2091,7 +2052,6 @@ function popularSelectColaboradoresAdmin(loginSelecionado = null, nomeCustomizad
     const mapa = obterMapaUsuarios();
     const meuLogin = obterLoginAtual();
 
-    // Lista todos os colaboradores (exceto o usuário técnico 'alupar', a menos que seja o único)
     const chaves = Object.keys(mapa)
         .filter(k => k !== 'alupar')
         .sort((a, b) => (mapa[a].label || a).localeCompare(mapa[b].label || b));
@@ -2247,7 +2207,6 @@ async function salvarFerias() {
     const loginOperador = obterLoginAtual();
     const contaLogada = mapa[loginOperador];
 
-    // Define o nome e o login do colaborador titular das férias
     let nomeColaborador = operador;
     let loginTitular = loginOperador;
 
@@ -2267,7 +2226,6 @@ async function salvarFerias() {
         }
     }
 
-    // Se for usuário comum, força estritamente a Equipe e Subestação aprovadas no seu cadastro
     let setor = isAdmin() ? document.getElementById('fSetor').value : ((contaLogada && contaLogada.setor) || document.getElementById('fSetor').value);
     let subestacao = isAdmin() ? document.getElementById('fSubestacao').value : ((contaLogada && contaLogada.subestacao) || document.getElementById('fSubestacao').value);
     let d = parseInt(document.getElementById('fDias').value);
@@ -2424,7 +2382,7 @@ async function removerFerias(id) {
 }
 
 // ==========================================
-// RENDERIZAÇÃO NA TELA (toda saída dinâmica escapada contra XSS)
+// RENDERIZAÇÃO NA TELA
 // ==========================================
 
 function renderFerias() {
@@ -2527,7 +2485,7 @@ function gerarAno(ano, ferias, container) {
 }
 
 // ==========================================
-// MODAL DE AUDITORIA (exportar e limpar: exclusivos do Master)
+// MODAL DE AUDITORIA
 // ==========================================
 
 function abrirModalAuditoria() {
@@ -2603,7 +2561,7 @@ function exportarLogsCSV() {
 }
 
 // ==========================================
-// EXPORTAÇÃO (CSV) E IMPRESSÃO (PDF) - EXCLUSIVO ADMIN
+// EXPORTAÇÃO (CSV) E IMPRESSÃO (PDF)
 // ==========================================
 
 function verificarConflito(registroAtual, listaCompleta) {
@@ -2714,7 +2672,6 @@ async function aprovarSolicitacaoUsuario(idSolicitacao) {
         dbCache.usuarios = {};
     }
 
-    // Senha inicial = login do usuário, gravada apenas como hash; troca obrigatória no 1º acesso
     const salt = gerarSaltHex();
     const k = await derivarHash(loginKey, salt, ITERACOES_PBKDF2);
 
@@ -2869,7 +2826,6 @@ async function salvarDadosUsuario(loginAlvo) {
         const k = await derivarHash(novaSenha, salt, ITERACOES_PBKDF2);
         entrada.hash = { s: salt, k: k, it: ITERACOES_PBKDF2 };
         entrada.ultimaTrocaSenhaEm = formatarDataHoraAtual();
-        // Senha definida pelo Master: o titular é obrigado a trocá-la no próximo login
         entrada.senhaAlteradaPeloUsuario = (loginAlvo === 'alupar');
     }
     delete entrada.pass;
@@ -2950,7 +2906,7 @@ function renderListaUsuariosModal() {
                     <strong style="color:var(--alupar-blue); font-size:1em;">${escapeHtml(s.label)}</strong>
                     <small style="color:#475569; font-weight:700;">(${escapeHtml(s.login)})</small>
                     <span class="badge-meta badge-setor" style="margin-left:4px;">${escapeHtml(s.setor || 'S/S')}</span>
-                    <span class="badge-meta badge-se">${escapeHtml(s.subestacao || 'S/SE')}</span>
+                    <span class="badge-meta badge-se">${escapeHtml(s.subestacao || 'S/SE'}</span>
                     <div style="font-size:0.75em; color:#64748b; margin-top:3px;">🕒 Solicitado em: ${escapeHtml(s.solicitadoEm || '-')}</div>
                 </div>
                 <div style="display:flex; gap:8px;">
@@ -3008,7 +2964,6 @@ function renderListaUsuariosModal() {
             }
         }
 
-        // Com hash PBKDF2 nenhuma senha é exibida; o Master pode apenas definir uma nova
         const infoSenhaMaster = masterLogado
             ? `<span class="pass-current-view">🔑 Senha protegida por hash PBKDF2 (nunca exibida)</span>`
             : `<span class="pass-current-view">📍 Lotação vinculada ao formulário:</span>`;
@@ -3066,7 +3021,6 @@ function dataHojeISO() {
 }
 
 (function init() {
-    // Frame-buster: impede que o sistema seja embutido em outros sites (clickjacking)
     if (window.top !== window.self) {
         try { window.top.location = window.self.location; }
         catch (e) { document.documentElement.innerHTML = ''; }
