@@ -1,10 +1,25 @@
 <!DOCTYPE html>
+<!--
+=====================================================================
+ GESTÃO DE FÉRIAS - REGIONAL NORDESTE (ALUPAR) - VERSÃO SEGURA
+ Publicação: GitHub Pages (estático) + Cloudflare Worker (backend).
+ O que mudou em relação à versão anterior:
+   - A chave do JSONBin saiu do código-fonte (agora vive no Worker).
+   - Senhas com hash PBKDF2-SHA256 no navegador (sem texto puro).
+   - Proteção contra XSS em toda a renderização (escapeHtml).
+   - Permissões revalidadas no servidor; token de sessão assinado.
+   - Rate limiting, validação server-side, CSP e frame-buster.
+ Passos de implantação: veja o comentário no início do <script> e o
+ arquivo worker.js. Tela de setup: https://seu-site/#configuracao
+=====================================================================
+-->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#183482">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://SEU-WORKER.workers.dev; base-uri 'none'; form-action 'none'">
     <title>Gestão de Férias - Regional Nordeste</title>
     <!-- FAVICON COM A LETRA 'A' MAIÚSCULA AZUL NA IDENTIDADE ALUPAR -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ffffff' stroke='%23183482' stroke-width='4'/%3E%3Crect x='14' y='8' width='36' height='6' rx='3' fill='%232ea843'/%3E%3Ctext x='32' y='52' font-family='Segoe UI, Arial, sans-serif' font-size='44' font-weight='900' fill='%23183482' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
@@ -779,6 +794,45 @@
     </style>
 </head>
 <body class="non-admin-print-block">
+<noscript><div style="background:#d32f2f;color:#fff;padding:14px;text-align:center;font-weight:bold;">Este sistema requer JavaScript habilitado para funcionar.</div></noscript>
+
+
+<!-- PÁGINA DE CONFIGURAÇÃO / MIGRAÇÃO (USO EXCLUSIVO DO RESPONSÁVEL DO SISTEMA) -->
+<div id="page-config" class="page">
+    <div class="login-wrapper" style="max-width:900px;">
+        <div class="container-box" style="border-top-color: var(--warning);">
+            <h2 class="form-title">Configuração Inicial / Migração de Senhas</h2>
+            <div class="info-hint-box">
+                Tela reservada ao responsável pelo sistema. O <strong>Token de Configuração</strong> definido no Cloudflare Worker é exigido para carregar e gravar os usuários.
+                As senhas informadas aqui são transformadas em hash <strong>no seu navegador</strong> (PBKDF2-SHA256, 150.000 iterações) e nunca são armazenadas ou enviadas em texto puro.
+                Mantenha o endereço desta tela reservado.
+            </div>
+            <div class="form-group">
+                <label>Token de Configuração</label>
+                <input type="password" id="setupToken" placeholder="X-Setup-Token definido no Cloudflare Worker" autocomplete="off">
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                <button type="button" class="btn-clear-filters" style="margin-top:0;" onclick="carregarDadosSetup()">Carregar usuários existentes</button>
+                <button type="button" class="btn-clear-filters" style="margin-top:0;" onclick="adicionarLinhaSetup()">Adicionar usuário</button>
+            </div>
+            <div class="error-msg" id="setupErro"></div>
+            <div class="success-msg" id="setupSucesso"></div>
+            <div id="setupInfoPreservado" style="font-size:0.85em; color:#475569; margin:8px 0; font-weight:600;"></div>
+            <div id="setupListaUsuarios"></div>
+            <button class="main-btn" onclick="salvarSetup()">Salvar / Migrar usuários (hash PBKDF2)</button>
+            <button type="button" class="btn-switch-auth" onclick="location.hash='#login'">Ir para o Login</button>
+        </div>
+    </div>
+</div>
+<style>
+    .setup-user-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #f8fafc; }
+    .setup-row-grid { display: grid; grid-template-columns: 1fr 1.6fr 0.9fr 1fr 1.1fr auto; gap: 8px; align-items: center; }
+    .setup-row-grid input, .setup-row-grid select { height: 38px; font-size: 0.9em; }
+    .setup-row-pass { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+    .setup-row-pass .su-senha { flex: 1; min-width: 220px; height: 38px; font-size: 0.9em; }
+    .setup-row-pass .su-status { font-size: 0.75em; color: #64748b; font-weight: 600; }
+    @media (max-width: 800px) { .setup-row-grid { grid-template-columns: 1fr 1fr; } }
+</style>
 
 <!-- TELA DE LOGIN E SOLICITAÇÃO DE CADASTRO -->
 <div id="page-login" class="page">
@@ -792,6 +846,7 @@
             <!-- BLOCO 1: ENTRAR NO SISTEMA -->
             <div class="login-body" id="blocoLoginForm">
                 <h2>🔒 Acesso Restrito</h2>
+                <div class="mandatory-alert-box" id="avisoConfiguracao" style="display:none;"></div>
                 <div class="form-group">
                     <label>Usuário</label>
                     <input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username">
@@ -917,7 +972,7 @@
                 </div>
                 <div class="form-group" style="margin:0">
                     <label>Data de Início</label>
-                    <input type="date" id="fInicio" value="2026-01-05">
+                    <input type="date" id="fInicio">
                 </div>
             </div>
 
@@ -1023,7 +1078,7 @@
                 <input type="password" id="minhaSenhaAtual" placeholder="Digite sua senha atual">
             </div>
             <div class="form-group">
-                <label>Nova Senha (mín. 4 caracteres)</label>
+                <label>Nova Senha (mín. 8 caracteres)</label>
                 <input type="password" id="minhaNovaSenha" placeholder="Digite uma nova senha exclusiva">
             </div>
             <div class="form-group" style="margin-bottom:8px;">
@@ -1088,7 +1143,7 @@
                 </div>
                 <div>
                     <label>Senha Inicial</label>
-                    <input type="text" id="novoUserSenha" placeholder="Senha 1º acesso" autocomplete="off">
+                    <input type="text" id="novoUserSenha" placeholder="Mínimo 8 caracteres" autocomplete="off">
                 </div>
                 <button class="main-btn" style="margin:0; height:46px; padding:0 16px;" onclick="criarNovoUsuario()">➕ Criar</button>
                 
@@ -1128,1166 +1183,1123 @@
 </div>
 
 <script>
-    // ==========================================
-    // TABELA BASE DE USUÁRIOS (CFALENCAR DEFINIDO COMO ADMIN)
-    // ==========================================
-    const USUARIOS_PADRAO = {
-        'alupar':      { pass: 'nordeste',    label: 'Administrador Master (Alupar)', role: 'master', setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: true },
-        'cfalencar':   { pass: 'cfalencar',   label: 'Carlos Alencar',                role: 'admin',  setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
-        'jsqueiroz':   { pass: 'jsqueiroz',   label: 'Josenir Silva',                 role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
-        'brrodrigues': { pass: 'brrodrigues', label: 'Bruno Alves Rodrigues',         role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
-        'ntribeiro':   { pass: 'ntribeiro',   label: 'Natanael Bonfim',               role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
-        'mmota':       { pass: 'mmota',       label: 'Mayara Mota',                   role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false },
-        'talsantos':   { pass: 'talsantos',   label: 'Tales Lopes',                   role: 'user',   setor: 'TELECOM', subestacao: 'SE JZT', senhaAlteradaPeloUsuario: false }
+// =====================================================================
+// GESTÃO DE FÉRIAS - REGIONAL NORDESTE (ALUPAR) - VERSÃO SEGURA PARA
+// PUBLICAÇÃO ESTÁTICA (GITHUB PAGES + CLOUDFLARE WORKER + JSONBIN)
+// ---------------------------------------------------------------------
+// COMO PUBLICAR (resumo das etapas):
+//   1) Cloudflare Workers: crie um Worker, cole o conteúdo de worker.js e
+//      defina as variáveis JSONBIN_BIN_ID, JSONBIN_MASTER_KEY, SETUP_TOKEN,
+//      TOKEN_SECRET e ALLOWED_ORIGIN (instruções no topo do worker.js).
+//   2) Neste arquivo, troque o valor de API_URL (busque "EDITE AQUI 2/2")
+//      e atualize também o domínio na meta tag Content-Security-Policy
+//      no cabeçalho do HTML ("EDITE AQUI 1/2").
+//   3) Publique o index.html no GitHub Pages. Depois acesse uma única vez
+//      o endereço  https://seu-site.github.io/#configuracao  para criar ou
+//      migrar os usuários: as senhas viram hash PBKDF2 no seu navegador e
+//      nunca trafegam nem ficam armazenadas em texto puro.
+// ---------------------------------------------------------------------
+// MEDIDAS DE SEGURANÇA APLICADAS:
+//   - Segredo da API (JSONBin) retirado do cliente; o navegador só fala
+//     com o Worker, que guarda a chave no servidor.
+//   - Senhas com hash PBKDF2-SHA256 (150.000 iterações, salt aleatório
+//     por usuário). Nenhuma senha em texto puro no código-fonte ou no banco.
+//   - Toda saída dinâmica passa por escapeHtml() (proteção contra XSS).
+//   - Sessão por token assinado (HMAC-SHA256) com expiração, emitido pelo
+//     Worker; permissões (admin/master) são revalidadas no servidor a cada
+//     gravação - editá-las no navegador não dá acesso algum.
+//   - Rate limiting de login e de solicitações de acesso.
+//   - Validação e limite de tamanho de todos os dados gravados.
+//   - Content-Security-Policy, frame-buster e zoom liberado (WCAG).
+// =====================================================================
+
+/* >>> EDITE AQUI (2/2): cole a URL do seu Cloudflare Worker <<< */
+const API_URL = 'COLE_AQUI_A_URL_DO_SEU_WORKER'; // ex.: https://ferias-alupar.sua-conta.workers.dev
+
+const ITERACOES_PBKDF2 = 150000;
+const LISTA_SETORES = ['TELECOM', 'SPCS', 'OPERAÇÃO', 'EAT', 'LT'];
+const LISTA_SES = ['SE JZT', 'SE GOR', 'SE OUR', 'SE BJD', 'SE SDS', 'SE RDE', 'SE RGD', 'SE JCT', 'SE JCD'];
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DIAS_SEMANA = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+let dbCache = { ferias: [], logs: [], usuarios: {}, solicitacoes: [] };
+let dbCarregado = false;
+let bloqueioTrocaSenhaAtivo = false;
+let editandoFeriasId = null;
+
+// ==========================================
+// UTILIDADES DE SEGURANÇA
+// ==========================================
+
+// Escapa texto antes de inserir em innerHTML (proteção contra XSS)
+function escapeHtml(valor) {
+    return String(valor === null || valor === undefined ? '' : valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function hexParaBytes(hex) {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return bytes;
+}
+
+function bytesParaHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function gerarSaltHex() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return bytesParaHex(bytes);
+}
+
+// Deriva o hash PBKDF2-SHA256 da senha (a senha em si nunca é armazenada nem enviada)
+async function derivarHash(senha, saltHex, iteracoes) {
+    const enc = new TextEncoder();
+    const chave = await crypto.subtle.importKey('raw', enc.encode(senha), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', hash: 'SHA-256', salt: hexParaBytes(saltHex), iterations: iteracoes || ITERACOES_PBKDF2 },
+        chave,
+        256
+    );
+    return bytesParaHex(new Uint8Array(bits));
+}
+
+function configOk() {
+    return !!API_URL && API_URL.indexOf('COLE_AQUI') === -1;
+}
+
+function verificarConfiguracao() {
+    const aviso = document.getElementById('avisoConfiguracao');
+    if (!aviso) return;
+    if (!configOk()) {
+        aviso.style.display = 'block';
+        aviso.innerHTML = '<strong>Configuração pendente:</strong> edite o arquivo index.html e informe a URL do seu Cloudflare Worker no campo API_URL (busque por "EDITE AQUI 2/2"). Atualize também o domínio do Worker na meta tag Content-Security-Policy ("EDITE AQUI 1/2"). Instruções completas no topo do arquivo worker.js.';
+    } else {
+        aviso.style.display = 'none';
+    }
+}
+
+// ==========================================
+// SESSÃO E PERMISSÕES
+// ==========================================
+
+function isLoggedIn() {
+    return sessionStorage.getItem('etb_logged') === 'true' && !!sessionStorage.getItem('etb_token');
+}
+
+function obterToken() {
+    return sessionStorage.getItem('etb_token') || '';
+}
+
+function tokenExpirado() {
+    const t = obterToken();
+    if (!t) return true;
+    try {
+        let corpo = t.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+        while (corpo.length % 4 !== 0) corpo += '=';
+        const payload = JSON.parse(decodeURIComponent(escape(atob(corpo))));
+        return !payload.exp || payload.exp < Math.floor(Date.now() / 1000);
+    } catch (e) { return true; }
+}
+
+function obterOperadorAtual() {
+    return sessionStorage.getItem('etb_operador') || 'Não identificado';
+}
+
+function obterLoginAtual() {
+    return (sessionStorage.getItem('etb_login') || '').toLowerCase().trim();
+}
+
+function isMaster() {
+    return obterLoginAtual() === 'alupar' || sessionStorage.getItem('etb_role') === 'master';
+}
+
+function isAdmin() {
+    const r = sessionStorage.getItem('etb_role');
+    return r === 'admin' || r === 'master' || isMaster();
+}
+
+function encerrarSessao(mensagem) {
+    if (mensagem) alert(mensagem);
+    fazerLogout();
+}
+
+// Cliente HTTP da API do Worker
+async function apiFetch(caminho, opcoes = {}) {
+    const { metodo = 'GET', corpo = null, comToken = true, headersExtra = null } = opcoes;
+    const headers = {};
+    if (corpo !== null) headers['Content-Type'] = 'application/json';
+    if (comToken && obterToken()) headers['Authorization'] = 'Bearer ' + obterToken();
+    if (headersExtra) Object.keys(headersExtra).forEach(k => { headers[k] = headersExtra[k]; });
+
+    const res = await fetch(API_URL + caminho, {
+        method: metodo,
+        headers: headers,
+        body: corpo !== null ? JSON.stringify(corpo) : undefined
+    });
+    let dados = null;
+    try { dados = await res.json(); } catch (e) { dados = null; }
+    return { ok: res.ok, status: res.status, dados: dados };
+}
+
+// ==========================================
+// BANCO DE DADOS (via Worker - a chave fica no servidor)
+// ==========================================
+
+function normalizarRegistro(f) {
+    let setor = (f.setor || '').toUpperCase().trim();
+    if (setor === 'TELECOMUNICAÇÕES' || setor === 'TELECOMUNICACOES') setor = 'TELECOM';
+
+    let se = (f.subestacao || '').toUpperCase().trim();
+    if (se === 'SE BJL' || se === 'BJL' || se === 'BJD') se = 'SE BJD';
+
+    return {
+        ...f,
+        setor: setor || f.setor,
+        subestacao: se || f.subestacao
     };
+}
 
-    const LISTA_SETORES = ['TELECOM', 'SPCS', 'OPERAÇÃO', 'EAT', 'LT'];
-    const LISTA_SES = ['SE JZT', 'SE GOR', 'SE OUR', 'SE BJD', 'SE SDS', 'SE RDE', 'SE RGD', 'SE JCT', 'SE JCD'];
-
-    // ==========================================
-    // BANCO DE DADOS E HIERARQUIA DE PERMISSÕES
-    // ==========================================
-    const BIN_ID = '6a7dd104da38895dfedfe24d'; 
-    const API_KEY = '$2a$10$KMiP/Zy1E5f0NzxO2r4tcu24duXEofxlQ6S5ON2H0iJdaerfpjk86';
-    const URL_DB = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
-    let dbCache = { ferias: [], logs: [], usuarios: {}, solicitacoes: [] };
-    let dbCarregado = false;
-    let bloqueioTrocaSenhaAtivo = false;
-
-    function obterOperadorAtual() {
-        return sessionStorage.getItem('etb_operador') || 'Não identificado';
-    }
-
-    function obterLoginAtual() {
-        return (sessionStorage.getItem('etb_login') || '').toLowerCase().trim();
-    }
-
-    // Verifica se é o usuário Master (exclusivo 'alupar')
-    function isMaster() {
-        return obterLoginAtual() === 'alupar' || sessionStorage.getItem('etb_role') === 'master';
-    }
-
-    // Verifica se possui permissão de Administrador (Master ou Admin, ex: alupar e cfalencar)
-    function isAdmin() {
-        const r = sessionStorage.getItem('etb_role');
-        return r === 'admin' || r === 'master' || isMaster();
-    }
-
-    function obterMapaUsuarios() {
-        const mapa = {};
-        Object.keys(USUARIOS_PADRAO).forEach(k => {
-            mapa[k] = { ...USUARIOS_PADRAO[k] };
-        });
-        if (dbCache.usuarios && typeof dbCache.usuarios === 'object') {
-            Object.keys(dbCache.usuarios).forEach(k => {
-                const loginKey = k.toLowerCase().trim();
-                const regSalvo = dbCache.usuarios[k];
-                if (!regSalvo || typeof regSalvo !== 'object') return;
-
-                const padrao = USUARIOS_PADRAO[loginKey] || {};
-                const labelFinal = (regSalvo.label && regSalvo.label.trim() !== '') ? regSalvo.label.trim() : (padrao.label || loginKey);
-                const setorFinal = regSalvo.setor || padrao.setor || 'TELECOM';
-                const seFinal = regSalvo.subestacao || padrao.subestacao || 'SE JZT';
-
-                mapa[loginKey] = {
-                    ...padrao,
-                    ...regSalvo,
-                    label: labelFinal,
-                    setor: setorFinal,
-                    subestacao: seFinal
-                };
-            });
+async function getDB() {
+    try {
+        const r = await apiFetch('/api/db');
+        if (r.status === 401) {
+            encerrarSessao('Sessão expirada ou inválida. Faça login novamente.');
+            return dbCache;
         }
-        mapa['alupar'].role = 'master';
-        if (!mapa['alupar'].label) mapa['alupar'].label = USUARIOS_PADRAO['alupar'].label;
-        mapa['alupar'].senhaAlteradaPeloUsuario = true;
+        if (!r.ok) throw new Error('HTTP ' + r.status);
 
-        if (!dbCache.usuarios || !dbCache.usuarios['cfalencar'] || !dbCache.usuarios['cfalencar'].roleDefinidoPeloMaster) {
-            mapa['cfalencar'].role = 'admin';
-        }
-        return mapa;
-    }
-
-    // Popula o seletor de colaboradores para os Administradores
-    function popularSelectColaboradoresAdmin(loginSelecionado = null, nomeCustomizado = null) {
-        const selectColab = document.getElementById('fColabSelect');
-        const boxOutro = document.getElementById('boxColabOutroNome');
-        const inputOutro = document.getElementById('fColabOutro');
-        if (!selectColab) return;
-
-        const mapa = obterMapaUsuarios();
-        const meuLogin = obterLoginAtual();
-
-        // Lista todos os colaboradores (exceto o usuário técnico 'alupar', a menos que seja o único)
-        const chaves = Object.keys(mapa)
-            .filter(k => k !== 'alupar')
-            .sort((a, b) => (mapa[a].label || a).localeCompare(mapa[b].label || b));
-
-        let htmlOptions = chaves.map(k => {
-            const u = mapa[k];
-            return `<option value="${k}">${u.label} (${k})</option>`;
-        }).join('');
-
-        htmlOptions += `<option value="__OUTRO__">➕ Outro colaborador (digitar nome)...</option>`;
-        selectColab.innerHTML = htmlOptions;
-
-        if (nomeCustomizado !== null) {
-            // Procura se o nome corresponde a algum usuário cadastrado
-            const chaveEncontrada = chaves.find(k =>
-                k === (loginSelecionado || '').toLowerCase() ||
-                (mapa[k].label || '').toLowerCase() === nomeCustomizado.toLowerCase()
-            );
-            if (chaveEncontrada) {
-                selectColab.value = chaveEncontrada;
-                boxOutro.style.display = 'none';
-                inputOutro.value = '';
-            } else {
-                selectColab.value = '__OUTRO__';
-                boxOutro.style.display = 'block';
-                inputOutro.value = nomeCustomizado;
-            }
-        } else {
-            const padraoSelect = (loginSelecionado && mapa[loginSelecionado] && loginSelecionado !== 'alupar')
-                ? loginSelecionado
-                : (chaves.includes(meuLogin) ? meuLogin : (chaves[0] || '__OUTRO__'));
-            selectColab.value = padraoSelect;
-            boxOutro.style.display = padraoSelect === '__OUTRO__' ? 'block' : 'none';
-            if (padraoSelect !== '__OUTRO__') inputOutro.value = '';
-        }
-    }
-
-    // Atualiza Setor e Subestação automaticamente quando o Admin troca o colaborador no select
-    function aoTrocarColaboradorAdmin() {
-        if (!isAdmin()) return;
-        const selectColab = document.getElementById('fColabSelect');
-        const boxOutro = document.getElementById('boxColabOutroNome');
-        const selectSetor = document.getElementById('fSetor');
-        const selectSE = document.getElementById('fSubestacao');
-
-        const valor = selectColab.value;
-        if (valor === '__OUTRO__') {
-            boxOutro.style.display = 'block';
-            document.getElementById('fColabOutro').focus();
-        } else {
-            boxOutro.style.display = 'none';
-            const mapa = obterMapaUsuarios();
-            const conta = mapa[valor];
-            if (conta && editandoFeriasId === null) {
-                if (conta.setor) selectSetor.value = conta.setor;
-                if (conta.subestacao) selectSE.value = conta.subestacao;
-            }
-        }
-    }
-
-    // Configura o formulário de acordo com o perfil (Admin escolhe colaborador; Usuário comum tem lotação travada)
-    function aplicarLotacaoUsuarioNoFormulario() {
-        const gridForm = document.getElementById('gridFormFerias');
-        const grupoColabAdmin = document.getElementById('grupoColabAdmin');
-        const boxOutro = document.getElementById('boxColabOutroNome');
-        const selectSetor = document.getElementById('fSetor');
-        const selectSE = document.getElementById('fSubestacao');
-        const labelSetor = document.getElementById('labelSetorForm');
-        const labelSE = document.getElementById('labelSubestacaoForm');
-        if (!selectSetor || !selectSE) return;
-
-        const mapa = obterMapaUsuarios();
-        const conta = mapa[obterLoginAtual()];
-
-        if (isAdmin()) {
-            gridForm.classList.add('admin-mode');
-            grupoColabAdmin.style.display = 'block';
-            selectSetor.disabled = false;
-            selectSE.disabled = false;
-            labelSetor.innerText = 'Setor / Equipe';
-            labelSE.innerText = 'Subestação';
-
-            if (editandoFeriasId === null) {
-                popularSelectColaboradoresAdmin();
-                aoTrocarColaboradorAdmin();
-            }
-        } else {
-            gridForm.classList.remove('admin-mode');
-            grupoColabAdmin.style.display = 'none';
-            boxOutro.style.display = 'none';
-            if (conta) {
-                selectSetor.value = conta.setor || 'TELECOM';
-                selectSE.value = conta.subestacao || 'SE JZT';
-            }
-            selectSetor.disabled = true;
-            selectSE.disabled = true;
-            labelSetor.innerText = 'Setor / Equipe 🔒';
-            labelSE.innerText = 'Subestação 🔒';
-        }
-    }
-
-    function verificarTrocaSenhaObrigatoria() {
-        const login = obterLoginAtual();
-        if (!login || login === 'alupar') return false;
-        const mapa = obterMapaUsuarios();
-        const conta = mapa[login];
-        if (!conta) return false;
-        return !conta.senhaAlteradaPeloUsuario || conta.pass === login;
-    }
-
-    function podeModificarRegistro(registro) {
-        if (!registro) return false;
-        if (isAdmin()) return true;
-
-        const loginAtual = obterLoginAtual();
-        const nomeAtual = obterOperadorAtual().toLowerCase().trim();
-        const autorLogin = (registro.criadoPorLogin || '').toLowerCase().trim();
-        const titularLogin = (registro.titularLogin || '').toLowerCase().trim();
-        const autorNome = (registro.criadoPor || '').toLowerCase().trim();
-        const titularNome = (registro.nome || '').toLowerCase().trim();
-
-        return (
-            (autorLogin !== '' && autorLogin === loginAtual) ||
-            (titularLogin !== '' && titularLogin === loginAtual) ||
-            (titularNome !== '' && titularNome === nomeAtual) ||
-            (autorNome !== '' && (autorNome === nomeAtual || autorNome === loginAtual))
-        );
-    }
-
-    function formatarDataHoraAtual() {
-        const agora = new Date();
-        return `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    function registrarLog(acao, detalhes, operadorCustom = null) {
-        if (!Array.isArray(dbCache.logs)) dbCache.logs = [];
-        const login = obterLoginAtual();
-        const nome = obterOperadorAtual();
-        const assinaturaPadrao = login && !nome.toLowerCase().includes(login) ? `${nome} (${login})` : nome;
-
-        dbCache.logs.unshift({
-            id: Date.now() + Math.floor(Math.random() * 1000),
-            dataHora: formatarDataHoraAtual(),
-            operador: operadorCustom || assinaturaPadrao,
-            acao: acao,
-            detalhes: detalhes
-        });
-        if (dbCache.logs.length > 250) {
-            dbCache.logs = dbCache.logs.slice(0, 250);
-        }
-    }
-
-    function normalizarRegistro(f) {
-        let setor = (f.setor || '').toUpperCase().trim();
-        if (setor === 'TELECOMUNICAÇÕES' || setor === 'TELECOMUNICACOES') setor = 'TELECOM';
-        
-        let se = (f.subestacao || '').toUpperCase().trim();
-        if (se === 'SE BJL' || se === 'BJL' || se === 'BJD') se = 'SE BJD';
-
-        return {
-            ...f,
-            setor: setor || f.setor,
-            subestacao: se || f.subestacao
+        const rec = (r.dados && r.dados.record) ? r.dados.record : r.dados;
+        dbCache = {
+            ferias: (rec && Array.isArray(rec.ferias)) ? rec.ferias.map(normalizarRegistro) : [],
+            logs: (rec && Array.isArray(rec.logs)) ? rec.logs : [],
+            usuarios: (rec && rec.usuarios && typeof rec.usuarios === 'object') ? rec.usuarios : {},
+            solicitacoes: (rec && Array.isArray(rec.solicitacoes)) ? rec.solicitacoes : []
         };
+        dbCarregado = true;
+    } catch (e) {
+        console.error('Erro ao buscar banco:', e);
+        alert('Atenção: não foi possível carregar os dados do servidor. Verifique sua conexão e a configuração da API_URL.');
+    }
+    return dbCache;
+}
+
+function desabilitarBotoes(bloquear) {
+    document.querySelectorAll('.main-btn').forEach(b => { b.disabled = bloquear; });
+}
+
+async function saveDB() {
+    if (!dbCarregado) {
+        alert('Sincronização pendente: o banco ainda não foi carregado do servidor. A gravação foi bloqueada para evitar perda de dados.');
+        return false;
     }
 
-    async function getDB() {
-        try {
-            const res = await fetch(`${URL_DB}/latest`, {
-                headers: { 
-                    'X-Master-Key': API_KEY,
-                    'Cache-Control': 'no-cache'
-                }
-            });
-            if (!res.ok) throw new Error(`Status HTTP: ${res.status}`);
-            
-            const json = await res.json();
-            if (json.record && typeof json.record === 'object') {
-                dbCache = {
-                    ...json.record,
-                    ferias: Array.isArray(json.record.ferias) ? json.record.ferias.map(normalizarRegistro) : [],
-                    logs: Array.isArray(json.record.logs) ? json.record.logs : [],
-                    usuarios: (json.record.usuarios && typeof json.record.usuarios === 'object') ? json.record.usuarios : {},
-                    solicitacoes: Array.isArray(json.record.solicitacoes) ? json.record.solicitacoes : []
-                };
-                dbCarregado = true;
-            }
-            return dbCache;
-        } catch (e) {
-            console.error("Erro ao buscar banco:", e);
-            alert("Atenção: Não foi possível carregar os dados do servidor. Verifique sua conexão.");
-            return dbCache;
-        }
-    }
-
-    async function saveDB() {
-        if (!dbCarregado) {
-            alert("Sincronização pendente: o banco ainda não foi carregado do servidor. A gravação foi bloqueada para evitar perda de dados.");
+    desabilitarBotoes(true);
+    try {
+        const r = await apiFetch('/api/db', { metodo: 'PUT', corpo: dbCache });
+        if (r.status === 401) {
+            encerrarSessao('Sessão expirada. Faça login novamente.');
             return false;
         }
-
-        document.querySelectorAll('.main-btn').forEach(b => b.disabled = true);
-        try {
-            const res = await fetch(URL_DB, { 
-                method: 'PUT', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Master-Key': API_KEY,
-                    'X-Bin-Versioning': 'false'
-                }, 
-                body: JSON.stringify(dbCache) 
-            });
-            if (!res.ok) throw new Error(`Erro ao salvar: ${res.status}`);
-            return true;
-        } catch (e) { 
-            console.error("Erro na gravação:", e);
-            alert("Erro de conexão ao salvar os dados na nuvem."); 
+        if (r.status === 403) {
+            alert(r.dados && r.dados.erro ? r.dados.erro : 'Operação não permitida para o seu perfil. Os dados foram recarregados.');
+            await getDB();
+            renderFerias();
             return false;
-        } finally { 
-            document.querySelectorAll('.main-btn').forEach(b => b.disabled = false); 
         }
+        if (r.status === 400 || r.status === 413) {
+            alert('O servidor rejeitou os dados: ' + ((r.dados && r.dados.erro) || 'conteúdo inválido'));
+            await getDB();
+            renderFerias();
+            return false;
+        }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return true;
+    } catch (e) {
+        console.error('Erro na gravação:', e);
+        alert('Erro de conexão ao salvar os dados na nuvem.');
+        return false;
+    } finally {
+        desabilitarBotoes(false);
+    }
+}
+
+function formatarDataHoraAtual() {
+    const agora = new Date();
+    return `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function registrarLog(acao, detalhes, operadorCustom = null) {
+    if (!Array.isArray(dbCache.logs)) dbCache.logs = [];
+    const login = obterLoginAtual();
+    const nome = obterOperadorAtual();
+    const assinaturaPadrao = login && !nome.toLowerCase().includes(login) ? `${nome} (${login})` : nome;
+
+    dbCache.logs.unshift({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        dataHora: formatarDataHoraAtual(),
+        operador: operadorCustom || assinaturaPadrao,
+        acao: acao,
+        detalhes: detalhes
+    });
+    if (dbCache.logs.length > 250) {
+        dbCache.logs = dbCache.logs.slice(0, 250);
+    }
+}
+
+// ==========================================
+// MAPA DE USUÁRIOS (agora vive 100% no banco - sem senhas no código)
+// ==========================================
+
+function obterMapaUsuarios() {
+    const mapa = {};
+    const fonte = (dbCache.usuarios && typeof dbCache.usuarios === 'object') ? dbCache.usuarios : {};
+    Object.keys(fonte).forEach(k => {
+        const loginKey = k.toLowerCase().trim();
+        const u = fonte[k];
+        if (!u || typeof u !== 'object') return;
+        mapa[loginKey] = {
+            ...u,
+            label: (u.label && String(u.label).trim() !== '') ? String(u.label).trim() : loginKey,
+            setor: u.setor || 'TELECOM',
+            subestacao: u.subestacao || 'SE JZT'
+        };
+    });
+    // Convenção do sistema: o login 'alupar' é sempre o Administrador Master
+    if (mapa['alupar']) mapa['alupar'].role = 'master';
+    return mapa;
+}
+
+function verificarTrocaSenhaObrigatoria() {
+    const login = obterLoginAtual();
+    if (!login || login === 'alupar') return false;
+    const mapa = obterMapaUsuarios();
+    const conta = mapa[login];
+    if (!conta) return false;
+    return !conta.senhaAlteradaPeloUsuario || !conta.hash;
+}
+
+function podeModificarRegistro(registro) {
+    if (!registro) return false;
+    if (isAdmin()) return true;
+
+    const loginAtual = obterLoginAtual();
+    const nomeAtual = obterOperadorAtual().toLowerCase().trim();
+    const autorLogin = (registro.criadoPorLogin || '').toLowerCase().trim();
+    const titularLogin = (registro.titularLogin || '').toLowerCase().trim();
+    const autorNome = (registro.criadoPor || '').toLowerCase().trim();
+    const titularNome = (registro.nome || '').toLowerCase().trim();
+
+    return (
+        (autorLogin !== '' && autorLogin === loginAtual) ||
+        (titularLogin !== '' && titularLogin === loginAtual) ||
+        (titularNome !== '' && titularNome === nomeAtual) ||
+        (autorNome !== '' && (autorNome === nomeAtual || autorNome === loginAtual))
+    );
+}
+
+// ==========================================
+// NAVEGAÇÃO ENTRE PÁGINAS
+// ==========================================
+
+function mostrarPagina(idPagina) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const alvo = document.getElementById(idPagina);
+    if (alvo) alvo.classList.add('active');
+}
+
+async function navigate() {
+    // Tela de configuração/migração (uso exclusivo do responsável; o Worker exige o Token de Configuração)
+    if (location.hash === '#configuracao') {
+        mostrarPagina('page-config');
+        return;
     }
 
-    // ==========================================
-    // AUTO-CADASTRO NA TELA DE LOGIN E ANTI-DUPLICIDADE
-    // ==========================================
-    function alternarTelaCadastroLogin(mostrarCadastro) {
-        document.getElementById('blocoLoginForm').style.display = mostrarCadastro ? 'none' : 'block';
-        document.getElementById('blocoAutoCadastroForm').style.display = mostrarCadastro ? 'block' : 'none';
-        document.getElementById('loginError').innerText = '';
-        document.getElementById('reqErrorMsg').innerText = '';
-        document.getElementById('reqSuccessMsg').innerText = '';
+    if (!isLoggedIn() || !configOk() || tokenExpirado()) {
+        if (isLoggedIn() && tokenExpirado()) encerrarSessao('Sua sessão expirou. Faça login novamente.');
+        document.body.classList.add('non-admin-print-block');
+        mostrarPagina('page-login');
+        alternarTelaCadastroLogin(false);
+        if (location.hash !== '#login') location.hash = '#login';
+        return;
     }
 
-    async function enviarSolicitacaoCadastro() {
-        const loginDesejado = document.getElementById('reqUserLogin').value.trim().toLowerCase().replace(/\s+/g, '');
-        const nomeCompleto = document.getElementById('reqUserNome').value.trim();
-        const equipe = document.getElementById('reqUserEquipe').value;
-        const subestacao = document.getElementById('reqUserSubestacao').value;
-        const erroEl = document.getElementById('reqErrorMsg');
-        const sucessoEl = document.getElementById('reqSuccessMsg');
-        const btn = document.getElementById('btnEnviarSolicitacao');
-
-        erroEl.innerText = '';
-        sucessoEl.innerText = '';
-
-        if (!loginDesejado || !nomeCompleto || !equipe || !subestacao) {
-            erroEl.innerText = 'Preencha todos os campos para solicitar o acesso.';
-            return;
-        }
-        if (loginDesejado.length < 3) {
-            erroEl.innerText = 'O usuário deve ter pelo menos 3 caracteres.';
-            return;
-        }
-        if (nomeCompleto.length < 3 || !nomeCompleto.includes(' ')) {
-            erroEl.innerText = 'Informe seu Nome e Sobrenome completos.';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerText = 'Verificando disponibilidade...';
+    if (!dbCarregado) {
         await getDB();
-        btn.disabled = false;
-        btn.innerText = '📨 Enviar Pedido de Aprovação';
-
-        if (!dbCarregado) return;
-
-        const mapaUsuarios = obterMapaUsuarios();
-        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
-        const nomeNorm = nomeCompleto.toLowerCase();
-
-        const jaExisteAtivo = mapaUsuarios[loginDesejado] ||
-            Object.values(mapaUsuarios).some(u => (u.label || '').toLowerCase().trim() === nomeNorm);
-
-        if (jaExisteAtivo) {
-            erroEl.innerText = 'Este usuário ou colaborador já possui cadastro ativo no sistema. Faça login.';
-            return;
-        }
-
-        const jaExisteSolicitacao = solicitacoes.some(s =>
-            (s.login || '').toLowerCase().trim() === loginDesejado ||
-            (s.label || '').toLowerCase().trim() === nomeNorm
-        );
-
-        if (jaExisteSolicitacao) {
-            erroEl.innerText = 'Já existe uma solicitação pendente para este usuário. Aguarde a aprovação do Administrador.';
-            return;
-        }
-
-        dbCache.solicitacoes.push({
-            id: Date.now(),
-            login: loginDesejado,
-            label: nomeCompleto,
-            setor: equipe,
-            subestacao: subestacao,
-            pass: loginDesejado,
-            solicitadoEm: formatarDataHoraAtual()
-        });
-
-        registrarLog(
-            'SOLICITAÇÃO',
-            `Solicitou criação do usuário "${loginDesejado}" (${nomeCompleto} | ${equipe} | ${subestacao}).`,
-            `${nomeCompleto} (${loginDesejado})`
-        );
-
-        const gravou = await saveDB();
-        if (gravou) {
-            document.getElementById('reqUserLogin').value = '';
-            document.getElementById('reqUserNome').value = '';
-            sucessoEl.innerText = '✅ Solicitação enviada com sucesso! Assim que um Administrador aprovar seu cadastro, você poderá fazer login.';
-        }
     }
 
-    // ==========================================
-    // LOGIN & NAVEGAÇÃO
-    // ==========================================
-    function isLoggedIn() { return sessionStorage.getItem('etb_logged') === 'true'; }
-    
-    async function fazerLogin() {
-        const u = document.getElementById('loginUser').value.trim().toLowerCase();
-        const p = document.getElementById('loginPass').value.trim();
-        const e = document.getElementById('loginError');
-        const btn = document.getElementById('btnLogin');
-
-        if (!u || !p) {
-            e.innerText = 'Preencha usuário e senha.';
-            e.style.opacity = '1';
-            setTimeout(() => e.style.opacity = '0', 3000);
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerText = 'Verificando credenciais...';
-        await getDB();
-        btn.disabled = false;
-        btn.innerText = 'Entrar no Sistema';
-
-        const mapaUsuarios = obterMapaUsuarios();
-        const conta = mapaUsuarios[u];
-
-        if (!conta) {
-            const pendente = (dbCache.solicitacoes || []).find(s => (s.login || '').toLowerCase() === u);
-            if (pendente) {
-                e.innerText = '⏳ Seu cadastro ainda aguarda aprovação de um Administrador.';
-                e.style.opacity = '1';
-                setTimeout(() => e.style.opacity = '0', 4500);
-                return;
-            }
-        }
-
-        if (conta && conta.pass === p) { 
-            sessionStorage.setItem('etb_logged', 'true');
-            sessionStorage.setItem('etb_login', u);
-            sessionStorage.setItem('etb_operador', conta.label || u);
-            sessionStorage.setItem('etb_role', conta.role || 'user');
-            e.style.opacity = '0'; 
-            document.getElementById('loginPass').value = '';
-            location.hash = '#ferias';
-            navigate();
-        } else { 
-            e.innerText = 'Usuário ou senha incorretos.'; 
-            e.style.opacity = '1'; 
-            setTimeout(() => e.style.opacity = '0', 3000); 
-        }
+    // Sincroniza o perfil exibido com os dados oficiais do banco
+    const mapa = obterMapaUsuarios();
+    const meuLogin = obterLoginAtual();
+    if (mapa[meuLogin]) {
+        sessionStorage.setItem('etb_role', mapa[meuLogin].role);
+        sessionStorage.setItem('etb_operador', mapa[meuLogin].label || meuLogin);
+    } else if (dbCarregado && Object.keys(mapa).length > 0) {
+        encerrarSessao('Sua conta não foi encontrada no sistema. Fale com um administrador.');
+        return;
     }
 
-    function fazerLogout() { 
-        sessionStorage.removeItem('etb_logged');
-        sessionStorage.removeItem('etb_login');
-        sessionStorage.removeItem('etb_operador');
-        sessionStorage.removeItem('etb_role');
-        dbCarregado = false;
-        bloqueioTrocaSenhaAtivo = false;
+    aplicarLotacaoUsuarioNoFormulario();
+
+    const badge = document.getElementById('badgeOperadorAtivo');
+    const toolbarAdmin = document.getElementById('toolbarAdmin');
+
+    if (isAdmin()) {
+        const sufixo = isMaster() ? ' [MASTER]' : ' [ADMIN]';
+        badge.innerText = `🛡️ ${obterOperadorAtual()}${obterOperadorAtual().includes('Master') ? '' : sufixo}`;
+        badge.classList.add('is-admin');
+        toolbarAdmin.style.display = 'flex';
+        document.body.classList.remove('non-admin-print-block');
+    } else {
+        badge.innerText = `👤 ${obterOperadorAtual()}`;
+        badge.classList.remove('is-admin');
+        toolbarAdmin.style.display = 'none';
         document.body.classList.add('non-admin-print-block');
         fecharModalAuditoria();
         fecharModalUsuarios();
-        document.getElementById('modalMinhaSenha').classList.remove('open');
-        cancelarEdicaoFerias();
-        alternarTelaCadastroLogin(false);
-        location.hash = '#login'; 
     }
 
-    document.addEventListener('keydown', e => { 
-        if (e.key === 'Enter' && (!isLoggedIn() || location.hash === '#login')) {
-            const cadVisivel = document.getElementById('blocoAutoCadastroForm').style.display === 'block';
-            if (cadVisivel) enviarSolicitacaoCadastro();
-            else fazerLogin();
+    mostrarPagina('page-ferias');
+    if (location.hash !== '#ferias') location.hash = '#ferias';
+    renderFerias();
+
+    if (verificarTrocaSenhaObrigatoria()) {
+        abrirModalMinhaSenha(true);
+    }
+}
+
+// ==========================================
+// LOGIN
+// ==========================================
+
+async function fazerLogin() {
+    if (!configOk()) {
+        verificarConfiguracao();
+        return;
+    }
+
+    const u = document.getElementById('loginUser').value.trim().toLowerCase();
+    const p = document.getElementById('loginPass').value.trim();
+    const e = document.getElementById('loginError');
+    const btn = document.getElementById('btnLogin');
+
+    if (!u || !p) {
+        e.innerText = 'Preencha usuário e senha.';
+        e.style.opacity = '1';
+        setTimeout(() => e.style.opacity = '0', 3000);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Verificando credenciais...';
+    e.innerText = '';
+
+    try {
+        // 1) Busca o salt público do usuário (salt fictício se não existir, sem revelar existência)
+        const saltRes = await apiFetch('/api/salt?u=' + encodeURIComponent(u), { comToken: false });
+        if (!saltRes.ok || !saltRes.dados || !saltRes.dados.s) {
+            throw new Error('Servidor indisponível.');
         }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
-            if (!isLoggedIn() || !isAdmin()) {
-                e.preventDefault();
-                alert("Acesso restrito: apenas administradores podem imprimir ou exportar em PDF.");
-            }
-        }
-    });
+        // 2) Deriva a chave da senha no navegador (a senha em si nunca é enviada)
+        const k = await derivarHash(p, saltRes.dados.s, saltRes.dados.it || ITERACOES_PBKDF2);
+        // 3) Envia apenas a chave derivada e recebe o token de sessão assinado
+        const r = await apiFetch('/api/login', { metodo: 'POST', corpo: { u: u, k: k }, comToken: false });
 
-    async function navigate() {
-        if (!isLoggedIn()) { 
-            document.body.classList.add('non-admin-print-block');
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-login').classList.add('active');
-            if (location.hash !== '#login') location.hash = '#login';
-            return; 
-        }
-
-        if (!dbCarregado) {
-            await getDB();
-        }
-
-        const mapa = obterMapaUsuarios();
-        const meuLogin = obterLoginAtual();
-        if (mapa[meuLogin]) {
-            sessionStorage.setItem('etb_role', mapa[meuLogin].role);
-            sessionStorage.setItem('etb_operador', mapa[meuLogin].label || meuLogin);
-        }
-
-        // Configura o formulário para Admin (com seletor de colaboradores) ou Usuário Comum (lotação travada)
-        aplicarLotacaoUsuarioNoFormulario();
-
-        const badge = document.getElementById('badgeOperadorAtivo');
-        const toolbarAdmin = document.getElementById('toolbarAdmin');
-
-        if (isAdmin()) {
-            const sufixo = isMaster() ? ' [MASTER]' : ' [ADMIN]';
-            badge.innerText = `🛡️ ${obterOperadorAtual()}${obterOperadorAtual().includes('Master') ? '' : sufixo}`;
-            badge.classList.add('is-admin');
-            toolbarAdmin.style.display = 'flex';
-            document.body.classList.remove('non-admin-print-block');
+        if (r.ok && r.dados && r.dados.token) {
+            const perfil = r.dados.perfil || {};
+            sessionStorage.setItem('etb_logged', 'true');
+            sessionStorage.setItem('etb_token', r.dados.token);
+            sessionStorage.setItem('etb_login', (perfil.login || u).toLowerCase());
+            sessionStorage.setItem('etb_operador', perfil.label || u);
+            sessionStorage.setItem('etb_role', perfil.role || 'user');
+            document.getElementById('loginPass').value = '';
+            e.style.opacity = '0';
+            location.hash = '#ferias';
+            navigate();
+        } else if (r.status === 403 && r.dados && r.dados.code === 'pendente') {
+            e.innerText = '⏳ Seu cadastro ainda aguarda aprovação de um Administrador.';
+            e.style.opacity = '1';
+            setTimeout(() => e.style.opacity = '0', 4500);
+        } else if (r.status === 429) {
+            e.innerText = 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.';
+            e.style.opacity = '1';
+            setTimeout(() => e.style.opacity = '0', 4500);
         } else {
-            badge.innerText = `👤 ${obterOperadorAtual()}`;
-            badge.classList.remove('is-admin');
-            toolbarAdmin.style.display = 'none';
-            document.body.classList.add('non-admin-print-block');
-            fecharModalAuditoria();
-            fecharModalUsuarios();
+            e.innerText = 'Usuário ou senha incorretos.';
+            e.style.opacity = '1';
+            setTimeout(() => e.style.opacity = '0', 3000);
         }
+    } catch (err) {
+        console.error(err);
+        e.innerText = 'Falha de conexão com o servidor. Verifique a configuração (API_URL) e sua internet.';
+        e.style.opacity = '1';
+        setTimeout(() => e.style.opacity = '0', 4500);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Entrar no Sistema';
+    }
+}
 
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page-ferias').classList.add('active');
-        if (location.hash !== '#ferias') location.hash = '#ferias';
-        renderFerias();
+function fazerLogout() {
+    sessionStorage.removeItem('etb_logged');
+    sessionStorage.removeItem('etb_token');
+    sessionStorage.removeItem('etb_login');
+    sessionStorage.removeItem('etb_operador');
+    sessionStorage.removeItem('etb_role');
+    dbCache = { ferias: [], logs: [], usuarios: {}, solicitacoes: [] };
+    dbCarregado = false;
+    bloqueioTrocaSenhaAtivo = false;
+    editandoFeriasId = null;
+    document.body.classList.add('non-admin-print-block');
+    fecharModalAuditoria();
+    fecharModalUsuarios();
+    document.getElementById('modalMinhaSenha').classList.remove('open');
+    cancelarEdicaoFerias();
+    alternarTelaCadastroLogin(false);
+    location.hash = '#login';
+    navigate();
+}
 
-        if (verificarTrocaSenhaObrigatoria()) {
-            abrirModalMinhaSenha(true);
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (!isLoggedIn() || location.hash === '#login')) {
+        const cadVisivel = document.getElementById('blocoAutoCadastroForm').style.display === 'block';
+        if (cadVisivel) enviarSolicitacaoCadastro();
+        else fazerLogin();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        if (!isLoggedIn() || !isAdmin()) {
+            e.preventDefault();
+            alert("Acesso restrito: apenas administradores podem imprimir ou exportar em PDF.");
         }
     }
+});
 
-    window.addEventListener('hashchange', navigate);
-    window.addEventListener('load', navigate);
+// ==========================================
+// ALTERAÇÃO DA PRÓPRIA SENHA (hash gerado no navegador)
+// ==========================================
 
-    // ==========================================
-    // ALTERAÇÃO DE SENHA (OBRIGATÓRIA NO 1º ACESSO OU VOLUNTÁRIA)
-    // ==========================================
-    function abrirModalMinhaSenha(obrigatoria = false) {
-        bloqueioTrocaSenhaAtivo = obrigatoria || verificarTrocaSenhaObrigatoria();
-        const meuLogin = obterLoginAtual();
-        const meuNome = obterOperadorAtual();
+function abrirModalMinhaSenha(obrigatoria = false) {
+    bloqueioTrocaSenhaAtivo = obrigatoria || verificarTrocaSenhaObrigatoria();
+    const meuLogin = obterLoginAtual();
+    const meuNome = obterOperadorAtual();
 
-        document.getElementById('minhaSenhaUsuario').value = `${meuNome} (${meuLogin})`;
-        document.getElementById('minhaSenhaAtual').value = '';
-        document.getElementById('minhaNovaSenha').value = '';
-        document.getElementById('minhaConfirmaSenha').value = '';
-        document.getElementById('msgErroMinhaSenha').innerText = '';
-        document.getElementById('msgSucessoMinhaSenha').innerText = '';
+    document.getElementById('minhaSenhaUsuario').value = `${meuNome} (${meuLogin})`;
+    document.getElementById('minhaSenhaAtual').value = '';
+    document.getElementById('minhaNovaSenha').value = '';
+    document.getElementById('minhaConfirmaSenha').value = '';
+    document.getElementById('msgErroMinhaSenha').innerText = '';
+    document.getElementById('msgSucessoMinhaSenha').innerText = '';
 
-        const titulo = document.getElementById('tituloModalMinhaSenha');
-        const btnFechar = document.getElementById('btnFecharMinhaSenha');
-        const aviso = document.getElementById('avisoTrocaObrigatoria');
-        const btnSair = document.getElementById('btnSairModalSenha');
+    const titulo = document.getElementById('tituloModalMinhaSenha');
+    const btnFechar = document.getElementById('btnFecharMinhaSenha');
+    const aviso = document.getElementById('avisoTrocaObrigatoria');
+    const btnSair = document.getElementById('btnSairModalSenha');
 
-        if (bloqueioTrocaSenhaAtivo) {
-            titulo.innerText = '🔒 Troca Obrigatória de Senha';
-            btnFechar.style.display = 'none';
-            aviso.style.display = 'block';
-            btnSair.style.display = 'block';
-        } else {
-            titulo.innerText = '🔑 Alterar Minha Senha';
-            btnFechar.style.display = 'block';
-            aviso.style.display = 'none';
-            btnSair.style.display = 'none';
-        }
-
-        document.getElementById('modalMinhaSenha').classList.add('open');
+    if (bloqueioTrocaSenhaAtivo) {
+        titulo.innerText = '🔒 Troca Obrigatória de Senha';
+        btnFechar.style.display = 'none';
+        aviso.style.display = 'block';
+        btnSair.style.display = 'block';
+    } else {
+        titulo.innerText = '🔑 Alterar Minha Senha';
+        btnFechar.style.display = 'block';
+        aviso.style.display = 'none';
+        btnSair.style.display = 'none';
     }
 
-    function tentarFecharOverlaySenha(event) {
-        if (event.target.id === 'modalMinhaSenha' && !bloqueioTrocaSenhaAtivo) {
-            fecharModalMinhaSenha();
-        }
+    document.getElementById('modalMinhaSenha').classList.add('open');
+}
+
+function tentarFecharOverlaySenha(event) {
+    if (event.target.id === 'modalMinhaSenha' && !bloqueioTrocaSenhaAtivo) {
+        fecharModalMinhaSenha();
+    }
+}
+
+function fecharModalMinhaSenha() {
+    if (bloqueioTrocaSenhaAtivo || verificarTrocaSenhaObrigatoria()) {
+        return;
+    }
+    document.getElementById('modalMinhaSenha').classList.remove('open');
+}
+
+async function salvarMinhaNovaSenha() {
+    const meuLogin = obterLoginAtual();
+    const atual = document.getElementById('minhaSenhaAtual').value.trim();
+    const nova = document.getElementById('minhaNovaSenha').value.trim();
+    const confirma = document.getElementById('minhaConfirmaSenha').value.trim();
+    const erroEl = document.getElementById('msgErroMinhaSenha');
+    const sucessoEl = document.getElementById('msgSucessoMinhaSenha');
+
+    erroEl.innerText = '';
+    sucessoEl.innerText = '';
+
+    if (!atual || !nova || !confirma) {
+        erroEl.innerText = 'Preencha todos os campos.';
+        return;
     }
 
-    function fecharModalMinhaSenha() {
-        if (bloqueioTrocaSenhaAtivo || verificarTrocaSenhaObrigatoria()) {
-            return;
-        }
-        document.getElementById('modalMinhaSenha').classList.remove('open');
+    const mapa = obterMapaUsuarios();
+    const conta = mapa[meuLogin];
+    if (!conta) {
+        erroEl.innerText = 'Conta não encontrada.';
+        return;
     }
 
-    async function salvarMinhaNovaSenha() {
-        const meuLogin = obterLoginAtual();
-        const atual = document.getElementById('minhaSenhaAtual').value.trim();
-        const nova = document.getElementById('minhaNovaSenha').value.trim();
-        const confirma = document.getElementById('minhaConfirmaSenha').value.trim();
-        const erroEl = document.getElementById('msgErroMinhaSenha');
-        const sucessoEl = document.getElementById('msgSucessoMinhaSenha');
-
-        erroEl.innerText = '';
-        sucessoEl.innerText = '';
-
-        if (!atual || !nova || !confirma) {
-            erroEl.innerText = 'Preencha todos os campos.';
-            return;
-        }
-
-        const mapa = obterMapaUsuarios();
-        const conta = mapa[meuLogin];
-        if (!conta || conta.pass !== atual) {
+    // Confere a senha atual comparando hashes (a senha em texto puro não é armazenada)
+    if (conta.hash) {
+        const tentativa = await derivarHash(atual, conta.hash.s, conta.hash.it || ITERACOES_PBKDF2);
+        if (tentativa !== conta.hash.k) {
             erroEl.innerText = 'A senha atual informada está incorreta.';
             return;
         }
-
-        if (nova.length < 4) {
-            erroEl.innerText = 'A nova senha deve ter pelo menos 4 caracteres.';
-            return;
-        }
-
-        if (nova.toLowerCase() === meuLogin) {
-            erroEl.innerText = 'Por segurança, a nova senha não pode ser igual ao seu nome de usuário.';
-            return;
-        }
-
-        if (nova === atual) {
-            erroEl.innerText = 'A nova senha deve ser diferente da senha atual.';
-            return;
-        }
-
-        if (nova !== confirma) {
-            erroEl.innerText = 'A confirmação da nova senha não confere.';
-            return;
-        }
-
-        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
-            dbCache.usuarios = {};
-        }
-
-        dbCache.usuarios[meuLogin] = {
-            ...(dbCache.usuarios[meuLogin] || {}),
-            ...conta,
-            pass: nova,
-            senhaAlteradaPeloUsuario: true,
-            ultimaTrocaSenhaEm: formatarDataHoraAtual()
-        };
-
-        registrarLog('SENHA', `O usuário "${meuLogin}" (${conta.label}) definiu uma nova senha pessoal.`);
-        const ok = await saveDB();
-        if (ok) {
-            bloqueioTrocaSenhaAtivo = false;
-            sucessoEl.innerText = '✅ Senha atualizada! Acesso liberado.';
-            setTimeout(() => {
-                document.getElementById('modalMinhaSenha').classList.remove('open');
-            }, 900);
-        }
     }
 
-    // ==========================================
-    // GERENCIAMENTO DE USUÁRIOS E APROVAÇÃO DE SOLICITAÇÕES
-    // ==========================================
-    function mostrarErroUsuario(msg) {
-        const el = document.getElementById('msgErroUsuario');
-        el.innerText = msg;
-        el.style.opacity = '1';
-        setTimeout(() => el.style.opacity = '0', 3500);
+    if (nova.length < 8) {
+        erroEl.innerText = 'A nova senha deve ter pelo menos 8 caracteres.';
+        return;
     }
 
-    function abrirModalUsuarios() {
-        if (!isAdmin()) {
-            return alert("Acesso restrito: apenas administradores podem gerenciar usuários.");
-        }
-        document.getElementById('novoUserLogin').value = '';
-        document.getElementById('novoUserNome').value = '';
-        document.getElementById('novoUserSenha').value = '';
-        document.getElementById('novoUserAdminCheck').checked = false;
-
-        document.getElementById('boxMasterRoleCheck').style.display = isMaster() ? 'flex' : 'none';
-
-        renderListaUsuariosModal();
-        document.getElementById('modalUsuarios').classList.add('open');
+    if (nova.toLowerCase() === meuLogin) {
+        erroEl.innerText = 'Por segurança, a nova senha não pode ser igual ao seu nome de usuário.';
+        return;
     }
 
-    function fecharModalUsuarios() {
-        document.getElementById('modalUsuarios').classList.remove('open');
+    if (nova === atual) {
+        erroEl.innerText = 'A nova senha deve ser diferente da senha atual.';
+        return;
     }
 
-    async function aprovarSolicitacaoUsuario(idSolicitacao) {
-        if (!isAdmin()) return;
-        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
-        const req = solicitacoes.find(s => s.id === idSolicitacao);
-        if (!req) return;
+    if (nova !== confirma) {
+        erroEl.innerText = 'A confirmação da nova senha não confere.';
+        return;
+    }
 
-        const loginKey = (req.login || '').toLowerCase().trim();
-        const mapaAtual = obterMapaUsuarios();
+    if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+        dbCache.usuarios = {};
+    }
 
-        if (mapaAtual[loginKey]) {
-            dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
-            await saveDB();
-            renderListaUsuariosModal();
-            renderFerias();
-            return mostrarErroUsuario(`O usuário "${loginKey}" já consta como ativo.`);
-        }
+    const salt = gerarSaltHex();
+    const k = await derivarHash(nova, salt, ITERACOES_PBKDF2);
 
-        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
-            dbCache.usuarios = {};
-        }
+    dbCache.usuarios[meuLogin] = {
+        ...(dbCache.usuarios[meuLogin] || {}),
+        ...conta,
+        hash: { s: salt, k: k, it: ITERACOES_PBKDF2 },
+        senhaAlteradaPeloUsuario: true,
+        ultimaTrocaSenhaEm: formatarDataHoraAtual()
+    };
+    delete dbCache.usuarios[meuLogin].pass; // remove qualquer senha legada em texto puro
 
-        dbCache.usuarios[loginKey] = {
-            pass: req.pass || loginKey,
-            label: req.label || loginKey,
-            setor: req.setor || 'TELECOM',
-            subestacao: req.subestacao || 'SE JZT',
-            role: 'user',
-            senhaAlteradaPeloUsuario: false,
-            aprovadoPor: obterOperadorAtual(),
-            aprovadoEm: formatarDataHoraAtual()
-        };
-
-        dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
-        registrarLog('APROVAÇÃO', `Aprovou a criação do usuário "${loginKey}" (${req.label} | ${req.setor} | ${req.subestacao}).`);
-
-        await saveDB();
-        aplicarLotacaoUsuarioNoFormulario();
-        renderListaUsuariosModal();
+    registrarLog('SENHA', `O usuário "${meuLogin}" (${conta.label}) definiu uma nova senha pessoal.`);
+    const ok = await saveDB();
+    if (ok) {
+        bloqueioTrocaSenhaAtivo = false;
+        sucessoEl.innerText = '✅ Senha atualizada! Acesso liberado.';
+        setTimeout(() => {
+            document.getElementById('modalMinhaSenha').classList.remove('open');
+        }, 900);
+    } else {
+        // Reverte a alteração local para manter o cache igual ao servidor
+        await getDB();
         renderFerias();
     }
+}
 
-    async function recusarSolicitacaoUsuario(idSolicitacao) {
-        if (!isAdmin()) return;
-        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
-        const req = solicitacoes.find(s => s.id === idSolicitacao);
-        if (!req) return;
+// ==========================================
+// AUTO-CADASTRO NA TELA DE LOGIN (o servidor valida, detecta duplicidade e grava)
+// ==========================================
 
-        if (!confirm(`Deseja recusar e excluir a solicitação de acesso de "${req.label}" (${req.login})?`)) return;
+function alternarTelaCadastroLogin(mostrarCadastro) {
+    document.getElementById('blocoLoginForm').style.display = mostrarCadastro ? 'none' : 'block';
+    document.getElementById('blocoAutoCadastroForm').style.display = mostrarCadastro ? 'block' : 'none';
+    document.getElementById('loginError').innerText = '';
+    document.getElementById('reqErrorMsg').innerText = '';
+    document.getElementById('reqSuccessMsg').innerText = '';
+}
 
-        dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
-        registrarLog('RECUSA', `Recusou e excluiu a solicitação de acesso de "${req.login}" (${req.label} | ${req.setor} | ${req.subestacao}).`);
+async function enviarSolicitacaoCadastro() {
+    const loginDesejado = document.getElementById('reqUserLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+    const nomeCompleto = document.getElementById('reqUserNome').value.trim();
+    const equipe = document.getElementById('reqUserEquipe').value;
+    const subestacao = document.getElementById('reqUserSubestacao').value;
+    const erroEl = document.getElementById('reqErrorMsg');
+    const sucessoEl = document.getElementById('reqSuccessMsg');
+    const btn = document.getElementById('btnEnviarSolicitacao');
 
-        await saveDB();
-        renderListaUsuariosModal();
-        renderFerias();
+    erroEl.innerText = '';
+    sucessoEl.innerText = '';
+
+    if (!loginDesejado || !nomeCompleto || !equipe || !subestacao) {
+        erroEl.innerText = 'Preencha todos os campos para solicitar o acesso.';
+        return;
+    }
+    if (loginDesejado.length < 3) {
+        erroEl.innerText = 'O usuário deve ter pelo menos 3 caracteres.';
+        return;
+    }
+    if (nomeCompleto.length < 3 || !nomeCompleto.includes(' ')) {
+        erroEl.innerText = 'Informe seu Nome e Sobrenome completos.';
+        return;
     }
 
-    async function criarNovoUsuario() {
-        if (!isAdmin()) return;
+    if (!configOk()) { verificarConfiguracao(); return; }
 
-        const loginNovo = document.getElementById('novoUserLogin').value.trim().toLowerCase().replace(/\s+/g, '');
-        const nomeSobrenome = document.getElementById('novoUserNome').value.trim();
-        const setorNovo = document.getElementById('novoUserSetor').value;
-        const seNova = document.getElementById('novoUserSubestacao').value;
-        const senhaNova = document.getElementById('novoUserSenha').value.trim();
-        const definirComoAdmin = isMaster() && document.getElementById('novoUserAdminCheck').checked;
+    btn.disabled = true;
+    btn.innerText = 'Enviando solicitação...';
 
-        if (!loginNovo || !nomeSobrenome || !setorNovo || !seNova || !senhaNova) {
-            return mostrarErroUsuario("Preencha login, nome e sobrenome, equipe, subestação e senha inicial.");
-        }
-        if (loginNovo.length < 3) {
-            return mostrarErroUsuario("O usuário (login) deve ter pelo menos 3 caracteres.");
-        }
-        if (nomeSobrenome.length < 3) {
-            return mostrarErroUsuario("Informe o Nome e Sobrenome do colaborador.");
-        }
+    try {
+        const r = await apiFetch('/api/solicitacao', {
+            metodo: 'POST',
+            comToken: false,
+            corpo: { login: loginDesejado, nome: nomeCompleto, setor: equipe, subestacao: subestacao }
+        });
 
-        const mapaAtual = obterMapaUsuarios();
-        if (mapaAtual[loginNovo]) {
-            return mostrarErroUsuario(`O usuário "${loginNovo}" já existe no sistema.`);
-        }
-
-        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
-            dbCache.usuarios = {};
-        }
-
-        const roleAtribuida = definirComoAdmin ? 'admin' : 'user';
-
-        dbCache.usuarios[loginNovo] = {
-            pass: senhaNova,
-            label: nomeSobrenome,
-            setor: setorNovo,
-            subestacao: seNova,
-            role: roleAtribuida,
-            senhaAlteradaPeloUsuario: false,
-            roleDefinidoPeloMaster: isMaster(),
-            criadoPor: obterOperadorAtual(),
-            criadoEm: formatarDataHoraAtual()
-        };
-
-        if (Array.isArray(dbCache.solicitacoes)) {
-            dbCache.solicitacoes = dbCache.solicitacoes.filter(s => (s.login || '').toLowerCase() !== loginNovo);
-        }
-
-        registrarLog('USUÁRIO', `Criou o usuário "${loginNovo}" (${nomeSobrenome} | ${setorNovo} | ${seNova}) com perfil [${roleAtribuida.toUpperCase()}]`);
-
-        document.getElementById('novoUserLogin').value = '';
-        document.getElementById('novoUserNome').value = '';
-        document.getElementById('novoUserSenha').value = '';
-        document.getElementById('novoUserAdminCheck').checked = false;
-
-        await saveDB();
-        aplicarLotacaoUsuarioNoFormulario();
-        renderListaUsuariosModal();
-        renderFerias();
-    }
-
-    async function salvarDadosUsuario(loginAlvo) {
-        if (!isAdmin()) return;
-
-        const mapa = obterMapaUsuarios();
-        const alvo = mapa[loginAlvo];
-        if (!alvo) return;
-
-        const selectSetor = document.getElementById(`editSetor_${loginAlvo}`);
-        const selectSE = document.getElementById(`editSE_${loginAlvo}`);
-        const novoSetor = selectSetor ? selectSetor.value : (alvo.setor || 'TELECOM');
-        const novaSE = selectSE ? selectSE.value : (alvo.subestacao || 'SE JZT');
-
-        let novoNome = alvo.label;
-        let novaSenha = alvo.pass;
-        let trocouSenha = false;
-
-        if (isMaster()) {
-            const inputNome = document.getElementById(`editNome_${loginAlvo}`);
-            const inputPass = document.getElementById(`editPass_${loginAlvo}`);
-            if (inputNome && inputPass) {
-                novoNome = inputNome.value.trim();
-                novaSenha = inputPass.value.trim();
-                if (!novoNome || novoNome.length < 3) {
-                    return mostrarErroUsuario(`Informe o Nome e Sobrenome válido para "${loginAlvo}".`);
-                }
-                if (!novaSenha || novaSenha.length < 3) {
-                    return mostrarErroUsuario(`A senha para "${loginAlvo}" deve ter pelo menos 3 caracteres.`);
-                }
-                trocouSenha = novaSenha !== alvo.pass;
-            }
-        }
-
-        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
-            dbCache.usuarios = {};
-        }
-
-        const exigirTrocaNoProximoLogin = loginAlvo !== 'alupar' && trocouSenha;
-
-        dbCache.usuarios[loginAlvo] = {
-            ...(dbCache.usuarios[loginAlvo] || {}),
-            ...alvo,
-            label: novoNome,
-            setor: novoSetor,
-            subestacao: novaSE,
-            pass: novaSenha,
-            senhaAlteradaPeloUsuario: trocouSenha ? !exigirTrocaNoProximoLogin : alvo.senhaAlteradaPeloUsuario,
-            ultimaTrocaSenhaEm: formatarDataHoraAtual()
-        };
-
-        registrarLog('USUÁRIO', `Atualizou cadastro de "${loginAlvo}" (${novoNome} | Lotação: ${novoSetor} - ${novaSE}${trocouSenha ? ' | Senha redefinida' : ''}).`);
-        await saveDB();
-        aplicarLotacaoUsuarioNoFormulario();
-        renderListaUsuariosModal();
-        alert(`Dados de "${novoNome}" (${loginAlvo}) atualizados com sucesso!`);
-    }
-
-    async function alternarPermissaoAdmin(loginAlvo) {
-        if (!isMaster()) {
-            return alert("Apenas o usuário Master (alupar) pode definir ou revogar permissões de Administrador.");
-        }
-        if (loginAlvo === 'alupar') return;
-
-        const mapa = obterMapaUsuarios();
-        const alvo = mapa[loginAlvo];
-        if (!alvo) return;
-
-        const novaRole = alvo.role === 'admin' ? 'user' : 'admin';
-        if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
-            dbCache.usuarios = {};
-        }
-
-        dbCache.usuarios[loginAlvo] = {
-            ...alvo,
-            role: novaRole,
-            roleDefinidoPeloMaster: true
-        };
-
-        registrarLog('USUÁRIO', `Master alterou a permissão de "${loginAlvo}" (${alvo.label}) para [${novaRole.toUpperCase()}]`);
-        await saveDB();
-        renderListaUsuariosModal();
-        renderFerias();
-    }
-
-    async function excluirUsuarioSistema(loginAlvo) {
-        if (!isAdmin()) return;
-        if (loginAlvo === 'alupar') return alert("O usuário Master não pode ser removido.");
-        if (loginAlvo === obterLoginAtual()) return alert("Você não pode excluir o seu próprio usuário em uso.");
-
-        const mapa = obterMapaUsuarios();
-        const alvo = mapa[loginAlvo];
-        if (!alvo) return;
-
-        if (alvo.role === 'admin' && !isMaster()) {
-            return alert("Apenas o usuário Master (alupar) pode excluir um usuário Administrador.");
-        }
-
-        if (USUARIOS_PADRAO[loginAlvo] && !isMaster()) {
-            return alert("Apenas o usuário Master (alupar) pode remover usuários da lista base.");
-        }
-
-        if (!confirm(`Deseja remover o usuário "${alvo.label}" (${loginAlvo})?`)) return;
-
-        if (dbCache.usuarios && dbCache.usuarios[loginAlvo]) {
-            delete dbCache.usuarios[loginAlvo];
-        }
-
-        registrarLog('USUÁRIO', `Removeu o usuário "${loginAlvo}" (${alvo.label})`);
-        await saveDB();
-        aplicarLotacaoUsuarioNoFormulario();
-        renderListaUsuariosModal();
-        renderFerias();
-    }
-
-    function renderListaUsuariosModal() {
-        const secaoPendentes = document.getElementById('secaoSolicitacoesPendentes');
-        const listaPendentesEl = document.getElementById('listaSolicitacoesPendentes');
-        const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
-
-        document.getElementById('countPendentesModal').innerText = solicitacoes.length;
-
-        if (solicitacoes.length > 0) {
-            secaoPendentes.style.display = 'block';
-            listaPendentesEl.innerHTML = solicitacoes.map(s => `
-                <div class="pending-card">
-                    <div>
-                        <strong style="color:var(--alupar-blue); font-size:1em;">${s.label}</strong>
-                        <small style="color:#475569; font-weight:700;">(${s.login})</small>
-                        <span class="badge-meta badge-setor" style="margin-left:4px;">${s.setor || 'S/S'}</span>
-                        <span class="badge-meta badge-se">${s.subestacao || 'S/SE'}</span>
-                        <div style="font-size:0.75em; color:#64748b; margin-top:3px;">🕒 Solicitado em: ${s.solicitadoEm || '-'}</div>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn-approve" onclick="aprovarSolicitacaoUsuario(${s.id})">✅ Aprovar</button>
-                        <button class="btn-reject" onclick="recusarSolicitacaoUsuario(${s.id})">✖ Recusar</button>
-                    </div>
-                </div>
-            `).join('');
+        if (r.ok) {
+            document.getElementById('reqUserLogin').value = '';
+            document.getElementById('reqUserNome').value = '';
+            sucessoEl.innerText = '✅ Solicitação enviada com sucesso! Assim que um Administrador aprovar seu cadastro, você poderá fazer login usando o seu usuário como senha inicial.';
+        } else if (r.status === 429) {
+            erroEl.innerText = 'Muitas solicitações enviadas. Aguarde alguns minutos antes de tentar novamente.';
         } else {
-            secaoPendentes.style.display = 'none';
-            listaPendentesEl.innerHTML = '';
+            erroEl.innerText = (r.dados && r.dados.erro) ? r.dados.erro : 'Não foi possível enviar a solicitação agora. Tente novamente.';
         }
+    } catch (err) {
+        console.error(err);
+        erroEl.innerText = 'Falha de conexão com o servidor. Tente novamente.';
+    } finally {
+        btn.disabled = false;
+        btn.innerText = '📨 Enviar Pedido de Aprovação';
+    }
+}
 
-        const container = document.getElementById('listaUsuariosSistema');
-        const mapa = obterMapaUsuarios();
-        const masterLogado = isMaster();
 
-        const chaves = Object.keys(mapa).sort((a, b) => {
-            if (a === 'alupar') return -1;
-            if (b === 'alupar') return 1;
-            return a.localeCompare(b);
-        });
+// ==========================================
+// TELA DE CONFIGURAÇÃO / MIGRAÇÃO (#configuracao)
+// Uso exclusivo do responsável: exige o Token de Configuração definido no Worker.
+// As senhas informadas aqui viram hash PBKDF2 neste navegador e nunca
+// ficam em texto puro no banco.
+// ==========================================
 
-        container.innerHTML = chaves.map(loginKey => {
-            const u = mapa[loginKey];
-            const roleClass = u.role === 'master' ? 'master' : (u.role === 'admin' ? 'admin' : 'user');
-            const roleLabel = u.role === 'master' ? 'MASTER' : (u.role === 'admin' ? 'ADMIN' : 'USUÁRIO');
-            const nomeFormatado = u.label || loginKey;
-            const nomeSeguroHtml = nomeFormatado.replace(/"/g, '&quot;');
-            const senhaSeguraHtml = (u.pass || '').replace(/"/g, '&quot;');
-            const setorAtual = u.setor || 'TELECOM';
-            const seAtual = u.subestacao || 'SE JZT';
+let setupBootUsuarios = {};
 
-            const trocouSenha = loginKey === 'alupar' || (u.senhaAlteradaPeloUsuario && u.pass !== loginKey);
-            const pillSenhaStatus = loginKey === 'alupar'
-                ? ''
-                : (trocouSenha
-                    ? '<span class="status-pass-pill ok">✓ Senha Pessoal Definida</span>'
-                    : '<span class="status-pass-pill pending">⏳ Troca Pendente no 1º Acesso</span>');
+function opcoesSelect(lista, selecionado) {
+    return lista.map(v => `<option value="${escapeHtml(v)}" ${v === selecionado ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('');
+}
 
-            const opcoesSetorHtml = LISTA_SETORES.map(st =>
-                `<option value="${st}" ${st === setorAtual ? 'selected' : ''}>${st}</option>`
-            ).join('');
+function adicionarLinhaSetup(d = {}) {
+    const container = document.getElementById('setupListaUsuarios');
+    const linha = document.createElement('div');
+    linha.className = 'setup-user-row';
+    linha.innerHTML = `
+        <div class="setup-row-grid">
+            <input type="text" class="su-login" placeholder="login" autocomplete="off" value="${escapeHtml(d.login || '')}" ${d.login ? 'readonly' : ''}>
+            <input type="text" class="su-nome" placeholder="Nome e Sobrenome" autocomplete="off" value="${escapeHtml(d.label || '')}">
+            <select class="su-role" title="Papel">
+                <option value="user" ${d.role === 'user' ? 'selected' : ''}>Usuário</option>
+                <option value="admin" ${d.role === 'admin' ? 'selected' : ''}>Admin</option>
+                <option value="master" ${d.role === 'master' ? 'selected' : ''}>Master</option>
+            </select>
+            <select class="su-setor" title="Equipe">${opcoesSelect(LISTA_SETORES, d.setor || 'TELECOM')}</select>
+            <select class="su-se" title="Subestação">${opcoesSelect(LISTA_SES, d.subestacao || 'SE JZT')}</select>
+            <button type="button" class="btn-icon delete" title="Remover linha">✖</button>
+        </div>
+        <div class="setup-row-pass">
+            <input type="text" class="su-senha" autocomplete="off" placeholder="${d.temHash ? 'Deixe vazio para MANTER a senha atual (hash)' : 'Senha inicial (mín. 8 caracteres)'}" value="${escapeHtml(d.pass || '')}">
+            <span class="su-status">${d.temHash ? 'Hash PBKDF2 existente — será mantido se o campo ficar vazio.' : (d.pass ? 'Senha atual em texto puro — será substituída por hash PBKDF2.' : 'Nova senha — será salva apenas como hash.')}</span>
+        </div>`;
+    linha.querySelector('.btn-icon').addEventListener('click', () => linha.remove());
+    container.appendChild(linha);
+}
 
-            const opcoesSEHtml = LISTA_SES.map(se =>
-                `<option value="${se}" ${se === seAtual ? 'selected' : ''}>${se}</option>`
-            ).join('');
+async function carregarDadosSetup() {
+    const erroEl = document.getElementById('setupErro');
+    const sucessoEl = document.getElementById('setupSucesso');
+    const infoEl = document.getElementById('setupInfoPreservado');
+    erroEl.innerText = '';
+    sucessoEl.innerText = '';
+    infoEl.innerText = '';
 
-            let botoesHtml = '';
-            if (loginKey !== 'alupar') {
-                if (masterLogado) {
-                    const txtToggle = u.role === 'admin' ? 'Rebaixar p/ Usuário' : 'Tornar Admin';
-                    botoesHtml += `<button class="btn-role-toggle" onclick="alternarPermissaoAdmin('${loginKey}')">${txtToggle}</button>`;
-                }
-                if (dbCache.usuarios && dbCache.usuarios[loginKey] && !USUARIOS_PADRAO[loginKey] && (masterLogado || u.role !== 'admin')) {
-                    botoesHtml += `<button class="btn-icon delete" style="width:32px;height:32px;font-size:1em;" onclick="excluirUsuarioSistema('${loginKey}')" title="Excluir Usuário">✖</button>`;
-                }
-            }
-
-            const infoSenhaMaster = masterLogado
-                ? `<span class="pass-current-view">🔑 Senha: <code>${senhaSeguraHtml}</code></span>`
-                : `<span class="pass-current-view">📍 Lotação vinculada ao formulário:</span>`;
-
-            const camposMasterNomeSenha = masterLogado ? `
-                <input type="text" class="inp-nome-master" id="editNome_${loginKey}" value="${nomeSeguroHtml}" placeholder="Nome e Sobrenome" title="Nome e Sobrenome">
-                <input type="text" class="inp-senha-master" id="editPass_${loginKey}" value="${senhaSeguraHtml}" placeholder="Senha" title="Senha de acesso">
-            ` : '';
-
-            return `
-                <div class="user-row">
-                    <div class="user-row-top">
-                        <div>
-                            <strong style="color:var(--alupar-blue); font-size:1.02em;">${nomeFormatado}</strong>
-                            <small style="color:#64748b; font-weight:600; margin-left:4px;">(${loginKey})</small>
-                            <span class="role-pill ${roleClass}" style="margin-left:6px;">${roleLabel}</span>
-                            <span class="badge-meta badge-setor" style="margin-left:4px;">${setorAtual}</span>
-                            <span class="badge-meta badge-se">${seAtual}</span>
-                            ${pillSenhaStatus}
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            ${botoesHtml}
-                        </div>
-                    </div>
-                    <div class="user-master-pass-bar">
-                        ${infoSenhaMaster}
-                        <div class="master-pass-edit-group">
-                            ${camposMasterNomeSenha}
-                            <select class="inp-lot-master" id="editSetor_${loginKey}" title="Equipe / Setor">${opcoesSetorHtml}</select>
-                            <select class="inp-lot-master" id="editSE_${loginKey}" title="Subestação">${opcoesSEHtml}</select>
-                            <button class="btn-save-pass-master" onclick="salvarDadosUsuario('${loginKey}')">💾 Salvar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+    const token = document.getElementById('setupToken').value.trim();
+    if (!token) {
+        erroEl.innerText = 'Informe o Token de Configuração definido no Cloudflare Worker.';
+        return;
     }
 
-    // ==========================================
-    // GESTÃO DE FÉRIAS (ADMIN SELECIONA QUALQUER COLABORADOR / USUÁRIO COMUM USA O PRÓPRIO)
-    // ==========================================
-    const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-    const DIAS_SEMANA = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-    let editandoFeriasId = null;
-    
-    function showErrorFerias(msg) { 
-        const el = document.getElementById('errorMsgFerias'); 
-        el.innerText = msg; 
-        el.style.opacity = '1'; 
-        setTimeout(() => el.style.opacity = '0', 3500); 
-    }
-
-    function extrairDataInput(f) {
-        if (f.inicioIso) return f.inicioIso;
-        if (f.inicioStr && f.inicioStr.includes('/')) {
-            const [dia, mes, ano] = f.inicioStr.split('/');
-            return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    try {
+        const r = await apiFetch('/api/seed', { comToken: false, headersExtra: { 'X-Setup-Token': token } });
+        if (r.status === 403) {
+            erroEl.innerText = 'Token de Configuração incorreto.';
+            return;
         }
-        const d = new Date(f.inicioTimestamp);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-
-    function obterListaFiltrada() {
-        const buscaTxt = (document.getElementById('filtroBusca').value || '').toLowerCase().trim();
-        const setorSel = document.getElementById('filtroSetor').value;
-        const seSel = document.getElementById('filtroSubestacao').value;
-        const anoSel = parseInt(document.getElementById('anoSelecionado').value);
-
-        const inicioAnoTs = new Date(anoSel, 0, 1).getTime();
-        const fimAnoTs = new Date(anoSel, 11, 31, 23, 59, 59).getTime();
-
-        return dbCache.ferias.filter(f => {
-            const matchNome = !buscaTxt || (f.nome || '').toLowerCase().includes(buscaTxt);
-            const matchSetor = setorSel === 'TODOS' || (f.setor || 'NÃO INFORMADO') === setorSel;
-            const matchSE = seSel === 'TODAS' || (f.subestacao || 'NÃO INFORMADA') === seSel;
-            const matchAno = f.inicioTimestamp <= fimAnoTs && f.fimTimestamp >= inicioAnoTs;
-            return matchNome && matchSetor && matchSE && matchAno;
-        });
-    }
-
-    function limparFiltros() {
-        document.getElementById('filtroBusca').value = '';
-        document.getElementById('filtroSetor').value = 'TODOS';
-        document.getElementById('filtroSubestacao').value = 'TODAS';
-        renderFerias();
-    }
-    
-    async function salvarFerias() {
-        if (verificarTrocaSenhaObrigatoria()) {
-            abrirModalMinhaSenha(true);
+        if (!r.ok) {
+            erroEl.innerText = 'Falha ao consultar o servidor. Verifique a configuração do Worker.';
             return;
         }
 
-        const mapa = obterMapaUsuarios();
-        const operador = obterOperadorAtual();
-        const loginOperador = obterLoginAtual();
-        const contaLogada = mapa[loginOperador];
+        const rec = (r.dados && r.dados.record) ? r.dados.record : null;
+        setupBootUsuarios = (rec && rec.usuarios && typeof rec.usuarios === 'object') ? rec.usuarios : {};
 
-        // Define o nome e o login do colaborador titular das férias
-        let nomeColaborador = operador;
-        let loginTitular = loginOperador;
+        document.getElementById('setupListaUsuarios').innerHTML = '';
+        const logins = Object.keys(setupBootUsuarios).sort();
+        logins.forEach(login => {
+            const u = setupBootUsuarios[login] || {};
+            adicionarLinhaSetup({
+                login: login,
+                label: u.label || login,
+                role: u.role || 'user',
+                setor: u.setor || 'TELECOM',
+                subestacao: u.subestacao || 'SE JZT',
+                pass: u.pass || '',
+                temHash: !!u.hash
+            });
+        });
 
-        if (isAdmin()) {
-            const selectColab = document.getElementById('fColabSelect');
-            const valSelect = selectColab ? selectColab.value : '';
-            if (valSelect === '__OUTRO__') {
-                const digitado = document.getElementById('fColabOutro').value.trim();
-                if (!digitado || digitado.length < 2) {
-                    return showErrorFerias("Informe o nome e sobrenome do colaborador.");
-                }
-                nomeColaborador = digitado;
-                loginTitular = '';
-            } else if (mapa[valSelect]) {
-                nomeColaborador = mapa[valSelect].label || valSelect;
-                loginTitular = valSelect;
-            }
+        if (rec) {
+            const qtdFerias = Array.isArray(rec.ferias) ? rec.ferias.length : 0;
+            const qtdLogs = Array.isArray(rec.logs) ? rec.logs.length : 0;
+            const qtdSolic = Array.isArray(rec.solicitacoes) ? rec.solicitacoes.length : 0;
+            infoEl.innerText = `Dados existentes no servidor: ${qtdFerias} registro(s) de férias, ${qtdLogs} log(s) e ${qtdSolic} solicitação(ões). Tudo isso será preservado.`;
+        } else {
+            infoEl.innerText = 'Nenhum dado existente no servidor. Adicione abaixo pelo menos um usuário Master.';
         }
 
-        // Se for usuário comum, força estritamente a Equipe e Subestação aprovadas no seu cadastro
-        let setor = isAdmin() ? document.getElementById('fSetor').value : ((contaLogada && contaLogada.setor) || document.getElementById('fSetor').value);
-        let subestacao = isAdmin() ? document.getElementById('fSubestacao').value : ((contaLogada && contaLogada.subestacao) || document.getElementById('fSubestacao').value);
-        let d = parseInt(document.getElementById('fDias').value);
-        let i = document.getElementById('fInicio').value;
+        if (!logins.length) adicionarLinhaSetup({ role: 'master' });
+        sucessoEl.innerText = `Carregado: ${logins.length} usuário(s). Revise as senhas e clique em Salvar.`;
+    } catch (err) {
+        console.error(err);
+        erroEl.innerText = 'Falha de conexão com o servidor. Verifique a API_URL no index.html.';
+    }
+}
 
-        if (!nomeColaborador || !setor || !subestacao || !d || !i) return showErrorFerias("Preencha todos os campos.");
-        if (d < 1 || d > 30) return showErrorFerias("O período deve ser entre 1 e 30 dias.");
-        
-        let idDate = new Date(i + "T00:00:00"), fdDate = new Date(idDate);
-        fdDate.setDate(fdDate.getDate() + d - 1);
+async function salvarSetup() {
+    const erroEl = document.getElementById('setupErro');
+    const sucessoEl = document.getElementById('setupSucesso');
+    erroEl.innerText = '';
+    sucessoEl.innerText = '';
 
-        const inicioFormatado = idDate.toLocaleDateString('pt-BR');
-        const fimFormatado = fdDate.toLocaleDateString('pt-BR');
-        const agoraStr = formatarDataHoraAtual();
+    const token = document.getElementById('setupToken').value.trim();
+    if (!token) {
+        erroEl.innerText = 'Informe o Token de Configuração.';
+        return;
+    }
 
-        if (editandoFeriasId !== null) {
-            let idx = dbCache.ferias.findIndex(f => f.id === editandoFeriasId);
-            if (idx !== -1) {
-                const ant = dbCache.ferias[idx];
-                if (!podeModificarRegistro(ant)) {
-                    limparFormularioFerias();
-                    return showErrorFerias("Acesso negado: você só pode editar registros cadastrados por você.");
+    const linhas = Array.from(document.querySelectorAll('#setupListaUsuarios .setup-user-row'));
+    if (!linhas.length) {
+        erroEl.innerText = 'Adicione pelo menos um usuário (é obrigatório existir um Master).';
+        return;
+    }
+
+    const usuarios = {};
+    try {
+        for (const linha of linhas) {
+            const login = (linha.querySelector('.su-login').value || '').trim().toLowerCase();
+            const nome = (linha.querySelector('.su-nome').value || '').trim();
+            const role = linha.querySelector('.su-role').value;
+            const setor = linha.querySelector('.su-setor').value;
+            const subestacao = linha.querySelector('.su-se').value;
+            const senha = (linha.querySelector('.su-senha').value || '').trim();
+
+            if (!/^[a-z0-9._-]{3,30}$/.test(login)) {
+                throw new Error(`Login inválido: "${login || '(vazio)'}". Use 3 a 30 caracteres (letras minúsculas, números, ponto, hífen ou underline).`);
+            }
+            if (usuarios[login]) {
+                throw new Error(`Login duplicado na lista: "${login}".`);
+            }
+            if (nome.length < 3) {
+                throw new Error(`Informe o Nome e Sobrenome de "${login}".`);
+            }
+            if (login === 'alupar' && role !== 'master') {
+                throw new Error('O usuário "alupar" deve ter o papel Master.');
+            }
+
+            let entrada;
+            if (senha) {
+                if (senha.length < 8) {
+                    throw new Error(`A senha de "${login}" deve ter pelo menos 8 caracteres.`);
                 }
-                const nomeFinal = isAdmin() ? nomeColaborador : (ant.nome || operador);
-                const loginTitularFinal = isAdmin() ? loginTitular : (ant.titularLogin || ant.criadoPorLogin || loginOperador);
-                const resumoAntes = `${ant.nome} (${ant.setor || 'S/S'} | ${ant.subestacao || 'S/SE'}): ${ant.inicioStr} a ${ant.fimStr} (${ant.dias}d)`;
-                const resumoDepois = `${nomeFinal} (${setor} | ${subestacao}): ${inicioFormatado} a ${fimFormatado} (${d}d)`;
-                
-                dbCache.ferias[idx] = {
-                    ...ant,
-                    nome: nomeFinal,
-                    titularLogin: loginTitularFinal,
-                    setor: setor,
-                    subestacao: subestacao,
-                    dias: d,
-                    inicioIso: i,
-                    inicioStr: inicioFormatado,
-                    fimStr: fimFormatado,
-                    inicioTimestamp: idDate.getTime(),
-                    fimTimestamp: fdDate.getTime(),
-                    editadoPor: operador,
-                    editadoPorLogin: loginOperador,
-                    editadoEm: agoraStr
+                const s = gerarSaltHex();
+                const k = await derivarHash(senha, s, ITERACOES_PBKDF2);
+                entrada = {
+                    hash: { s: s, k: k, it: ITERACOES_PBKDF2 },
+                    label: nome, role: role, setor: setor, subestacao: subestacao,
+                    senhaAlteradaPeloUsuario: senha.toLowerCase() !== login
                 };
-                registrarLog('EDIÇÃO', `De [${resumoAntes}] para [${resumoDepois}]`);
+            } else {
+                const antigo = setupBootUsuarios[login];
+                if (!antigo || !antigo.hash) {
+                    throw new Error(`Defina uma senha para "${login}" (não há hash anterior para manter).`);
+                }
+                entrada = {
+                    hash: antigo.hash,
+                    label: nome, role: role, setor: setor, subestacao: subestacao,
+                    senhaAlteradaPeloUsuario: antigo.senhaAlteradaPeloUsuario !== false
+                };
             }
-            limparFormularioFerias();
+            usuarios[login] = entrada;
+        }
+    } catch (err) {
+        erroEl.innerText = err.message;
+        return;
+    }
+
+    if (!Object.keys(usuarios).some(k => usuarios[k].role === 'master')) {
+        erroEl.innerText = 'Pelo menos um usuário deve ter o papel Master.';
+        return;
+    }
+
+    const btn = document.querySelector('#page-config .main-btn');
+    if (btn) { btn.disabled = true; }
+    try {
+        const r = await apiFetch('/api/seed', {
+            metodo: 'POST',
+            comToken: false,
+            headersExtra: { 'X-Setup-Token': token },
+            corpo: { usuarios: usuarios }
+        });
+        if (r.ok) {
+            sucessoEl.innerText = `Usuários gravados com sucesso (${Object.keys(usuarios).length}). O sistema já pode ser acessado pelo Login.`;
+            document.getElementById('setupInfoPreservado').innerText = '';
+        } else if (r.status === 403) {
+            erroEl.innerText = 'Token de Configuração incorreto.';
         } else {
-            dbCache.ferias.push({
-                id: Date.now(),
-                nome: nomeColaborador,
-                titularLogin: loginTitular,
+            erroEl.innerText = (r.dados && r.dados.erro) ? r.dados.erro : 'Falha ao gravar. Tente novamente.';
+        }
+    } catch (err) {
+        console.error(err);
+        erroEl.innerText = 'Falha de conexão com o servidor.';
+    } finally {
+        if (btn) { btn.disabled = false; }
+    }
+}
+
+// ==========================================
+// FORMULÁRIO DE FÉRIAS: LOTAÇÃO POR PERFIL
+// ==========================================
+
+function popularSelectColaboradoresAdmin(loginSelecionado = null, nomeCustomizado = null) {
+    const selectColab = document.getElementById('fColabSelect');
+    const boxOutro = document.getElementById('boxColabOutroNome');
+    const inputOutro = document.getElementById('fColabOutro');
+    if (!selectColab) return;
+
+    const mapa = obterMapaUsuarios();
+    const meuLogin = obterLoginAtual();
+
+    // Lista todos os colaboradores (exceto o usuário técnico 'alupar', a menos que seja o único)
+    const chaves = Object.keys(mapa)
+        .filter(k => k !== 'alupar')
+        .sort((a, b) => (mapa[a].label || a).localeCompare(mapa[b].label || b));
+
+    let htmlOptions = chaves.map(k => {
+        const u = mapa[k];
+        return `<option value="${escapeHtml(k)}">${escapeHtml(u.label)} (${escapeHtml(k)})</option>`;
+    }).join('');
+
+    htmlOptions += `<option value="__OUTRO__">➕ Outro colaborador (digitar nome)...</option>`;
+    selectColab.innerHTML = htmlOptions;
+
+    if (nomeCustomizado !== null) {
+        const chaveEncontrada = chaves.find(k =>
+            k === (loginSelecionado || '').toLowerCase() ||
+            (mapa[k].label || '').toLowerCase() === nomeCustomizado.toLowerCase()
+        );
+        if (chaveEncontrada) {
+            selectColab.value = chaveEncontrada;
+            boxOutro.style.display = 'none';
+            inputOutro.value = '';
+        } else {
+            selectColab.value = '__OUTRO__';
+            boxOutro.style.display = 'block';
+            inputOutro.value = nomeCustomizado;
+        }
+    } else {
+        const padraoSelect = (loginSelecionado && mapa[loginSelecionado] && loginSelecionado !== 'alupar')
+            ? loginSelecionado
+            : (chaves.includes(meuLogin) ? meuLogin : (chaves[0] || '__OUTRO__'));
+        selectColab.value = padraoSelect;
+        boxOutro.style.display = padraoSelect === '__OUTRO__' ? 'block' : 'none';
+        if (padraoSelect !== '__OUTRO__') inputOutro.value = '';
+    }
+}
+
+function aoTrocarColaboradorAdmin() {
+    if (!isAdmin()) return;
+    const selectColab = document.getElementById('fColabSelect');
+    const boxOutro = document.getElementById('boxColabOutroNome');
+    const selectSetor = document.getElementById('fSetor');
+    const selectSE = document.getElementById('fSubestacao');
+
+    const valor = selectColab.value;
+    if (valor === '__OUTRO__') {
+        boxOutro.style.display = 'block';
+        document.getElementById('fColabOutro').focus();
+    } else {
+        boxOutro.style.display = 'none';
+        const mapa = obterMapaUsuarios();
+        const conta = mapa[valor];
+        if (conta && editandoFeriasId === null) {
+            if (conta.setor) selectSetor.value = conta.setor;
+            if (conta.subestacao) selectSE.value = conta.subestacao;
+        }
+    }
+}
+
+function aplicarLotacaoUsuarioNoFormulario() {
+    const gridForm = document.getElementById('gridFormFerias');
+    const grupoColabAdmin = document.getElementById('grupoColabAdmin');
+    const boxOutro = document.getElementById('boxColabOutroNome');
+    const selectSetor = document.getElementById('fSetor');
+    const selectSE = document.getElementById('fSubestacao');
+    const labelSetor = document.getElementById('labelSetorForm');
+    const labelSE = document.getElementById('labelSubestacaoForm');
+    if (!selectSetor || !selectSE) return;
+
+    const mapa = obterMapaUsuarios();
+    const conta = mapa[obterLoginAtual()];
+
+    if (isAdmin()) {
+        gridForm.classList.add('admin-mode');
+        grupoColabAdmin.style.display = 'block';
+        selectSetor.disabled = false;
+        selectSE.disabled = false;
+        labelSetor.innerText = 'Setor / Equipe';
+        labelSE.innerText = 'Subestação';
+
+        if (editandoFeriasId === null) {
+            popularSelectColaboradoresAdmin();
+            aoTrocarColaboradorAdmin();
+        }
+    } else {
+        gridForm.classList.remove('admin-mode');
+        grupoColabAdmin.style.display = 'none';
+        boxOutro.style.display = 'none';
+        if (conta) {
+            selectSetor.value = conta.setor || 'TELECOM';
+            selectSE.value = conta.subestacao || 'SE JZT';
+        }
+        selectSetor.disabled = true;
+        selectSE.disabled = true;
+        labelSetor.innerText = 'Setor / Equipe 🔒';
+        labelSE.innerText = 'Subestação 🔒';
+    }
+}
+
+// ==========================================
+// GESTÃO DE FÉRIAS (CRUD)
+// ==========================================
+
+function showErrorFerias(msg) {
+    const el = document.getElementById('errorMsgFerias');
+    el.innerText = msg;
+    el.style.opacity = '1';
+    setTimeout(() => el.style.opacity = '0', 3500);
+}
+
+function extrairDataInput(f) {
+    if (f.inicioIso) return f.inicioIso;
+    if (f.inicioStr && f.inicioStr.includes('/')) {
+        const [dia, mes, ano] = f.inicioStr.split('/');
+        return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    }
+    const d = new Date(f.inicioTimestamp);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function obterListaFiltrada() {
+    const buscaTxt = (document.getElementById('filtroBusca').value || '').toLowerCase().trim();
+    const setorSel = document.getElementById('filtroSetor').value;
+    const seSel = document.getElementById('filtroSubestacao').value;
+    const anoSel = parseInt(document.getElementById('anoSelecionado').value);
+
+    const inicioAnoTs = new Date(anoSel, 0, 1).getTime();
+    const fimAnoTs = new Date(anoSel, 11, 31, 23, 59, 59).getTime();
+
+    return dbCache.ferias.filter(f => {
+        const matchNome = !buscaTxt || (f.nome || '').toLowerCase().includes(buscaTxt);
+        const matchSetor = setorSel === 'TODOS' || (f.setor || 'NÃO INFORMADO') === setorSel;
+        const matchSE = seSel === 'TODAS' || (f.subestacao || 'NÃO INFORMADA') === seSel;
+        const matchAno = f.inicioTimestamp <= fimAnoTs && f.fimTimestamp >= inicioAnoTs;
+        return matchNome && matchSetor && matchSE && matchAno;
+    });
+}
+
+function limparFiltros() {
+    document.getElementById('filtroBusca').value = '';
+    document.getElementById('filtroSetor').value = 'TODOS';
+    document.getElementById('filtroSubestacao').value = 'TODAS';
+    renderFerias();
+}
+
+async function salvarFerias() {
+    if (verificarTrocaSenhaObrigatoria()) {
+        abrirModalMinhaSenha(true);
+        return;
+    }
+
+    const mapa = obterMapaUsuarios();
+    const operador = obterOperadorAtual();
+    const loginOperador = obterLoginAtual();
+    const contaLogada = mapa[loginOperador];
+
+    // Define o nome e o login do colaborador titular das férias
+    let nomeColaborador = operador;
+    let loginTitular = loginOperador;
+
+    if (isAdmin()) {
+        const selectColab = document.getElementById('fColabSelect');
+        const valSelect = selectColab ? selectColab.value : '';
+        if (valSelect === '__OUTRO__') {
+            const digitado = document.getElementById('fColabOutro').value.trim();
+            if (!digitado || digitado.length < 2) {
+                return showErrorFerias("Informe o nome e sobrenome do colaborador.");
+            }
+            nomeColaborador = digitado;
+            loginTitular = '';
+        } else if (mapa[valSelect]) {
+            nomeColaborador = mapa[valSelect].label || valSelect;
+            loginTitular = valSelect;
+        }
+    }
+
+    // Se for usuário comum, força estritamente a Equipe e Subestação aprovadas no seu cadastro
+    let setor = isAdmin() ? document.getElementById('fSetor').value : ((contaLogada && contaLogada.setor) || document.getElementById('fSetor').value);
+    let subestacao = isAdmin() ? document.getElementById('fSubestacao').value : ((contaLogada && contaLogada.subestacao) || document.getElementById('fSubestacao').value);
+    let d = parseInt(document.getElementById('fDias').value);
+    let i = document.getElementById('fInicio').value;
+
+    if (!nomeColaborador || !setor || !subestacao || !d || !i) return showErrorFerias("Preencha todos os campos.");
+    if (d < 1 || d > 30) return showErrorFerias("O período deve ser entre 1 e 30 dias.");
+
+    let idDate = new Date(i + "T00:00:00"), fdDate = new Date(idDate);
+    fdDate.setDate(fdDate.getDate() + d - 1);
+
+    const inicioFormatado = idDate.toLocaleDateString('pt-BR');
+    const fimFormatado = fdDate.toLocaleDateString('pt-BR');
+    const agoraStr = formatarDataHoraAtual();
+
+    if (editandoFeriasId !== null) {
+        let idx = dbCache.ferias.findIndex(f => f.id === editandoFeriasId);
+        if (idx !== -1) {
+            const ant = dbCache.ferias[idx];
+            if (!podeModificarRegistro(ant)) {
+                limparFormularioFerias();
+                return showErrorFerias("Acesso negado: você só pode editar registros cadastrados por você.");
+            }
+            const nomeFinal = isAdmin() ? nomeColaborador : (ant.nome || operador);
+            const loginTitularFinal = isAdmin() ? loginTitular : (ant.titularLogin || ant.criadoPorLogin || loginOperador);
+            const resumoAntes = `${ant.nome} (${ant.setor || 'S/S'} | ${ant.subestacao || 'S/SE'}): ${ant.inicioStr} a ${ant.fimStr} (${ant.dias}d)`;
+            const resumoDepois = `${nomeFinal} (${setor} | ${subestacao}): ${inicioFormatado} a ${fimFormatado} (${d}d)`;
+
+            dbCache.ferias[idx] = {
+                ...ant,
+                nome: nomeFinal,
+                titularLogin: loginTitularFinal,
                 setor: setor,
                 subestacao: subestacao,
                 dias: d,
@@ -2296,337 +2308,780 @@
                 fimStr: fimFormatado,
                 inicioTimestamp: idDate.getTime(),
                 fimTimestamp: fdDate.getTime(),
-                criadoPor: operador,
-                criadoPorLogin: loginOperador,
-                criadoEm: agoraStr
-            });
-            registrarLog('CADASTRO', `Cadastrou férias de ${nomeColaborador} (${setor} | ${subestacao}): ${inicioFormatado} até ${fimFormatado} (${d} dias)`);
-            document.getElementById('fDias').value = '';
-            if (isAdmin() && document.getElementById('fColabSelect').value === '__OUTRO__') {
-                document.getElementById('fColabOutro').value = '';
-            }
+                editadoPor: operador,
+                editadoPorLogin: loginOperador,
+                editadoEm: agoraStr
+            };
+            registrarLog('EDIÇÃO', `De [${resumoAntes}] para [${resumoDepois}]`);
         }
-
-        const anoCadastrado = String(idDate.getFullYear());
-        const selectAno = document.getElementById('anoSelecionado');
-        if ([...selectAno.options].some(o => o.value === anoCadastrado)) {
-            selectAno.value = anoCadastrado;
-        }
-        
-        await saveDB();
-        renderFerias();
-    }
-
-    function editarFerias(id) {
-        if (verificarTrocaSenhaObrigatoria()) {
-            abrirModalMinhaSenha(true);
-            return;
-        }
-
-        const f = dbCache.ferias.find(item => item.id === id);
-        if (!f) return;
-
-        if (!podeModificarRegistro(f)) {
-            return alert("Permissão negada: você só pode alterar registros cadastrados pelo seu próprio usuário.");
-        }
-
-        editandoFeriasId = id;
-        if (isAdmin()) {
-            popularSelectColaboradoresAdmin(f.titularLogin || f.criadoPorLogin, f.nome);
-            if (f.setor) document.getElementById('fSetor').value = f.setor;
-            if (f.subestacao) document.getElementById('fSubestacao').value = f.subestacao;
-        } else {
-            aplicarLotacaoUsuarioNoFormulario();
-        }
-        document.getElementById('fDias').value = f.dias;
-        document.getElementById('fInicio').value = extrairDataInput(f);
-
-        document.getElementById('tituloFormFerias').innerText = `Editando Férias de: ${f.nome}`;
-        const btnSalvar = document.getElementById('btnSalvarFerias');
-        btnSalvar.innerText = "Salvar Alterações";
-        btnSalvar.classList.add('btn-edit-mode');
-        document.getElementById('btnCancelarFerias').style.display = 'block';
-
-        renderFerias();
-        document.getElementById('boxFormCadastro').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function cancelarEdicaoFerias() {
         limparFormularioFerias();
-        renderFerias();
+    } else {
+        dbCache.ferias.push({
+            id: Date.now(),
+            nome: nomeColaborador,
+            titularLogin: loginTitular,
+            setor: setor,
+            subestacao: subestacao,
+            dias: d,
+            inicioIso: i,
+            inicioStr: inicioFormatado,
+            fimStr: fimFormatado,
+            inicioTimestamp: idDate.getTime(),
+            fimTimestamp: fdDate.getTime(),
+            criadoPor: operador,
+            criadoPorLogin: loginOperador,
+            criadoEm: agoraStr
+        });
+        registrarLog('CADASTRO', `Cadastrou férias de ${nomeColaborador} (${setor} | ${subestacao}): ${inicioFormatado} até ${fimFormatado} (${d} dias)`);
+        document.getElementById('fDias').value = '';
+        if (isAdmin() && document.getElementById('fColabSelect').value === '__OUTRO__') {
+            document.getElementById('fColabOutro').value = '';
+        }
     }
 
-    function limparFormularioFerias() {
-        editandoFeriasId = null;
-        document.getElementById('fDias').value = '';
-        document.getElementById('fColabOutro').value = '';
-        document.getElementById('tituloFormFerias').innerText = "Cadastrar Período de Férias";
-        const btnSalvar = document.getElementById('btnSalvarFerias');
-        btnSalvar.innerText = "Adicionar Férias";
-        btnSalvar.classList.remove('btn-edit-mode');
-        document.getElementById('btnCancelarFerias').style.display = 'none';
+    const anoCadastrado = String(idDate.getFullYear());
+    const selectAno = document.getElementById('anoSelecionado');
+    if ([...selectAno.options].some(o => o.value === anoCadastrado)) {
+        selectAno.value = anoCadastrado;
+    }
+
+    await saveDB();
+    renderFerias();
+}
+
+function editarFerias(id) {
+    if (verificarTrocaSenhaObrigatoria()) {
+        abrirModalMinhaSenha(true);
+        return;
+    }
+
+    const f = dbCache.ferias.find(item => item.id === id);
+    if (!f) return;
+
+    if (!podeModificarRegistro(f)) {
+        return alert("Permissão negada: você só pode alterar registros cadastrados pelo seu próprio usuário.");
+    }
+
+    editandoFeriasId = id;
+    if (isAdmin()) {
+        popularSelectColaboradoresAdmin(f.titularLogin || f.criadoPorLogin, f.nome);
+        if (f.setor) document.getElementById('fSetor').value = f.setor;
+        if (f.subestacao) document.getElementById('fSubestacao').value = f.subestacao;
+    } else {
         aplicarLotacaoUsuarioNoFormulario();
     }
+    document.getElementById('fDias').value = f.dias;
+    document.getElementById('fInicio').value = extrairDataInput(f);
 
-    async function removerFerias(id) {
-        if (verificarTrocaSenhaObrigatoria()) {
-            abrirModalMinhaSenha(true);
-            return;
-        }
+    document.getElementById('tituloFormFerias').innerText = `Editando Férias de: ${f.nome}`;
+    const btnSalvar = document.getElementById('btnSalvarFerias');
+    btnSalvar.innerText = "Salvar Alterações";
+    btnSalvar.classList.add('btn-edit-mode');
+    document.getElementById('btnCancelarFerias').style.display = 'block';
 
-        const alvo = dbCache.ferias.find(f => f.id === id);
-        if (!alvo) return;
+    renderFerias();
+    document.getElementById('boxFormCadastro').scrollIntoView({ behavior: 'smooth' });
+}
 
-        if (!podeModificarRegistro(alvo)) {
-            return alert("Permissão negada: você só pode excluir registros cadastrados pelo seu próprio usuário.");
-        }
+function cancelarEdicaoFerias() {
+    limparFormularioFerias();
+    renderFerias();
+}
 
-        if (!confirm(`Remover o período de férias de ${alvo.nome}?`)) return;
-        
-        if (editandoFeriasId === id) limparFormularioFerias();
-        dbCache.ferias = dbCache.ferias.filter(f => f.id !== id);
-        registrarLog('EXCLUSÃO', `Removeu férias de ${alvo.nome} (${alvo.setor || 'S/S'} | ${alvo.subestacao || 'S/SE'}): ${alvo.inicioStr} até ${alvo.fimStr} (${alvo.dias}d)`);
-        
-        await saveDB();
-        renderFerias();
+function limparFormularioFerias() {
+    editandoFeriasId = null;
+    document.getElementById('fDias').value = '';
+    document.getElementById('fColabOutro').value = '';
+    document.getElementById('tituloFormFerias').innerText = "Cadastrar Período de Férias";
+    const btnSalvar = document.getElementById('btnSalvarFerias');
+    btnSalvar.innerText = "Adicionar Férias";
+    btnSalvar.classList.remove('btn-edit-mode');
+    document.getElementById('btnCancelarFerias').style.display = 'none';
+    aplicarLotacaoUsuarioNoFormulario();
+}
+
+async function removerFerias(id) {
+    if (verificarTrocaSenhaObrigatoria()) {
+        abrirModalMinhaSenha(true);
+        return;
     }
 
-    // ==========================================
-    // MODAL DE AUDITORIA (EXPORTAR E LIMPAR EXCLUSIVOS DO ADMIN MASTER)
-    // ==========================================
-    function abrirModalAuditoria() {
-        if (!isAdmin()) {
-            return alert("Acesso restrito: apenas administradores podem visualizar a trilha de auditoria.");
-        }
+    const alvo = dbCache.ferias.find(f => f.id === id);
+    if (!alvo) return;
 
-        const container = document.getElementById('listaLogsAuditoria');
-        const boxAcoesMaster = document.getElementById('acoesMasterAuditoria');
-        const logs = dbCache.logs || [];
-        
-        boxAcoesMaster.style.display = isMaster() ? 'flex' : 'none';
-
-        if (!logs.length) {
-            container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">Nenhuma ação registrada até o momento.</p>';
-        } else {
-            container.innerHTML = logs.map(l => `
-                <div class="log-item">
-                    <div class="log-top">
-                        <div>
-                            <span class="log-badge ${l.acao}">${l.acao}</span>
-                            <strong style="color:var(--alupar-blue); margin-left:6px;">👤 ${l.operador}</strong>
-                        </div>
-                        <small style="color:#64748b; font-weight:600;">🕒 ${l.dataHora}</small>
-                    </div>
-                    <div style="color:#334155; margin-top:2px;">${l.detalhes}</div>
-                </div>
-            `).join('');
-        }
-        document.getElementById('modalAuditoria').classList.add('open');
+    if (!podeModificarRegistro(alvo)) {
+        return alert("Permissão negada: você só pode excluir registros cadastrados pelo seu próprio usuário.");
     }
 
-    function fecharModalAuditoria() {
-        document.getElementById('modalAuditoria').classList.remove('open');
+    if (!confirm(`Remover o período de férias de ${alvo.nome}?`)) return;
+
+    if (editandoFeriasId === id) limparFormularioFerias();
+    dbCache.ferias = dbCache.ferias.filter(f => f.id !== id);
+    registrarLog('EXCLUSÃO', `Removeu férias de ${alvo.nome} (${alvo.setor || 'S/S'} | ${alvo.subestacao || 'S/SE'}): ${alvo.inicioStr} até ${alvo.fimStr} (${alvo.dias}d)`);
+
+    await saveDB();
+    renderFerias();
+}
+
+// ==========================================
+// RENDERIZAÇÃO NA TELA (toda saída dinâmica escapada contra XSS)
+// ==========================================
+
+function renderFerias() {
+    let ld = document.getElementById('listaFerias');
+
+    const listaFiltrada = obterListaFiltrada();
+    const adminAtivo = isAdmin();
+    const qtdPendentes = (dbCache.solicitacoes || []).length;
+
+    document.getElementById('contadorRegistros').innerText = `${listaFiltrada.length} registro(s)`;
+    document.getElementById('countLogs').innerText = (dbCache.logs || []).length;
+    document.getElementById('toolbarAdmin').style.display = adminAtivo ? 'flex' : 'none';
+
+    const bannerPendentes = document.getElementById('bannerSolicitacoesPendentes');
+    const badgePendentesBtn = document.getElementById('badgeCountPendentes');
+    if (adminAtivo && qtdPendentes > 0) {
+        bannerPendentes.style.display = 'flex';
+        document.getElementById('textoBannerSolicitacoes').innerHTML = `🔔 Há <strong>${qtdPendentes} solicitação(ões)</strong> de criação de usuário aguardando aprovação!`;
+        badgePendentesBtn.style.display = 'inline-block';
+        badgePendentesBtn.innerText = qtdPendentes;
+    } else {
+        bannerPendentes.style.display = 'none';
+        badgePendentesBtn.style.display = 'none';
     }
 
-    async function limparLogsAuditoria() {
-        if (!isMaster()) {
-            return alert("Acesso restrito: apenas o Administrador Master (alupar) pode limpar os logs da trilha de auditoria.");
-        }
-        if (!confirm("Deseja realmente apagar todo o histórico da trilha de auditoria?")) return;
-        dbCache.logs = [];
-        await saveDB();
-        abrirModalAuditoria();
-        renderFerias();
-    }
+    if (!listaFiltrada.length) {
+        ld.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:15px 0;">Nenhuma féria encontrada para os filtros selecionados.</p>';
+    } else {
+        const itens = listaFiltrada.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).map(f => {
+            const isEditing = f.id === editandoFeriasId ? 'editing' : '';
+            const setorTxt = f.setor || 'SEM SETOR';
+            const seTxt = f.subestacao || 'SEM SE';
 
-    function exportarLogsCSV() {
-        if (!isMaster()) {
-            return alert("Acesso restrito: apenas o Administrador Master (alupar) pode exportar os logs da trilha de auditoria.");
-        }
-
-        const logs = dbCache.logs || [];
-        if (!logs.length) return alert("Não há logs para exportar.");
-
-        let csvContent = "\uFEFFData e Hora;Usuário Responsável;Ação;Detalhes da Operação\n";
-        logs.forEach(l => {
-            const op = `"${(l.operador || '').replace(/"/g, '""')}"`;
-            const acao = `"${(l.acao || '').replace(/"/g, '""')}"`;
-            const det = `"${(l.detalhes || '').replace(/"/g, '""')}"`;
-            csvContent += `"${l.dataHora}";${op};${acao};${det}\n`;
-        });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `auditoria_ferias_regional_nordeste.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    // ==========================================
-    // EXPORTAÇÃO (CSV / EXCEL) E IMPRESSÃO (PDF) - EXCLUSIVO ADMIN
-    // ==========================================
-    function verificarConflito(registroAtual, listaCompleta) {
-        const conflitantes = listaCompleta.filter(outro => 
-            outro.id !== registroAtual.id &&
-            registroAtual.inicioTimestamp <= outro.fimTimestamp &&
-            registroAtual.fimTimestamp >= outro.inicioTimestamp
-        );
-        if (conflitantes.length === 0) return "Sem conflito";
-        return "Conflito com: " + conflitantes.map(c => `${c.nome} (${c.setor || 'S/S'} - ${c.subestacao || 'S/SE'})`).join(", ");
-    }
-
-    function exportarCSV() {
-        if (!isAdmin()) {
-            return alert("Acesso restrito: apenas administradores podem exportar relatórios em Excel (CSV).");
-        }
-
-        const listaParaExportar = obterListaFiltrada();
-        if (!listaParaExportar || listaParaExportar.length === 0) {
-            return showErrorFerias("Não há registros de férias no filtro atual para exportar.");
-        }
-
-        const listaOrdenada = [...listaParaExportar].sort((a, b) => a.inicioTimestamp - b.inicioTimestamp);
-        let csvContent = "\uFEFFColaborador;Setor;Subestação;Dias;Data de Início;Data de Término;Ano de Início;Status de Conflito;Cadastrado Por;Data Cadastro;Última Edição Por;Data Edição\n";
-
-        listaOrdenada.forEach(f => {
-            const nomeLimpo = `"${(f.nome || '').replace(/"/g, '""')}"`;
-            const setorLimpo = `"${(f.setor || 'NÃO INFORMADO').replace(/"/g, '""')}"`;
-            const seLimpa = `"${(f.subestacao || 'NÃO INFORMADA').replace(/"/g, '""')}"`;
-            const anoInicio = new Date(f.inicioTimestamp).getFullYear();
-            const statusConflito = `"${verificarConflito(f, listaOrdenada)}"`;
-            const criadoPor = `"${(f.criadoPor || 'Registro anterior').replace(/"/g, '""')}"`;
-            const criadoEm = `"${(f.criadoEm || '-').replace(/"/g, '""')}"`;
-            const editadoPor = `"${(f.editadoPor || '-').replace(/"/g, '""')}"`;
-            const editadoEm = `"${(f.editadoEm || '-').replace(/"/g, '""')}"`;
-            
-            csvContent += `${nomeLimpo};${setorLimpo};${seLimpa};${f.dias};${f.inicioStr};${f.fimStr};${anoInicio};${statusConflito};${criadoPor};${criadoEm};${editadoPor};${editadoEm}\n`;
-        });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const anoRef = document.getElementById('anoSelecionado').value;
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', `ferias_regional_nordeste_${anoRef}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    function imprimirRelatorio() {
-        if (!isAdmin()) {
-            return alert("Acesso restrito: apenas administradores podem imprimir ou exportar relatórios em PDF.");
-        }
-        window.print();
-    }
-
-    // ==========================================
-    // RENDERIZAÇÃO NA TELA
-    // ==========================================
-    function renderFerias() {
-        let ld = document.getElementById('listaFerias');
-        ld.innerHTML = '';
-        
-        const listaFiltrada = obterListaFiltrada();
-        const adminAtivo = isAdmin();
-        const qtdPendentes = (dbCache.solicitacoes || []).length;
-
-        document.getElementById('contadorRegistros').innerText = `${listaFiltrada.length} registro(s)`;
-        document.getElementById('countLogs').innerText = (dbCache.logs || []).length;
-        document.getElementById('toolbarAdmin').style.display = adminAtivo ? 'flex' : 'none';
-
-        const bannerPendentes = document.getElementById('bannerSolicitacoesPendentes');
-        const badgePendentesBtn = document.getElementById('badgeCountPendentes');
-        if (adminAtivo && qtdPendentes > 0) {
-            bannerPendentes.style.display = 'flex';
-            document.getElementById('textoBannerSolicitacoes').innerHTML = `🔔 Há <strong>${qtdPendentes} solicitação(ões)</strong> de criação de usuário aguardando aprovação!`;
-            badgePendentesBtn.style.display = 'inline-block';
-            badgePendentesBtn.innerText = qtdPendentes;
-        } else {
-            bannerPendentes.style.display = 'none';
-            badgePendentesBtn.style.display = 'none';
-        }
-
-        if (!listaFiltrada.length) {
-            ld.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:15px 0;">Nenhuma féria encontrada para os filtros selecionados.</p>';
-        } else {
-            listaFiltrada.sort((a, b) => a.inicioTimestamp - b.inicioTimestamp).forEach(f => {
-                const isEditing = f.id === editandoFeriasId ? 'editing' : '';
-                const setorTxt = f.setor || 'SEM SETOR';
-                const seTxt = f.subestacao || 'SEM SE';
-                
-                let trilhaHtml = '';
-                if (adminAtivo) {
-                    if (f.criadoPor) {
-                        trilhaHtml += `Cadastrado por <strong>${f.criadoPor}</strong> em ${f.criadoEm}`;
-                    }
-                    if (f.editadoPor) {
-                        trilhaHtml += `${trilhaHtml ? ' • ' : ''}Editado por <strong>${f.editadoPor}</strong> em ${f.editadoEm}`;
-                    }
+            let trilhaHtml = '';
+            if (adminAtivo) {
+                if (f.criadoPor) {
+                    trilhaHtml += `Cadastrado por <strong>${escapeHtml(f.criadoPor)}</strong> em ${escapeHtml(f.criadoEm)}`;
                 }
-
-                const temPermissao = podeModificarRegistro(f);
-                const botoesAcaoHtml = temPermissao
-                    ? `<button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️</button>
-                       <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Excluir">✖</button>`
-                    : `<span class="btn-icon locked" title="Registro protegido: somente o autor deste cadastro ou um Administrador pode alterá-lo">🔒</span>`;
-
-                ld.innerHTML += `
-                    <div class="list-item ${isEditing}">
-                        <div>
-                            <div class="colab-header">
-                                <strong>${f.nome}</strong>
-                                <span class="badge-meta badge-setor">${setorTxt}</span>
-                                <span class="badge-meta badge-se">${seTxt}</span>
-                            </div>
-                            <small>${f.inicioStr} até ${f.fimStr} <strong>(${f.dias} dias)</strong></small>
-                            ${trilhaHtml ? `<span class="audit-meta-line">🛡️ ${trilhaHtml}</span>` : ''}
-                        </div>
-                        <div class="item-actions">
-                            ${botoesAcaoHtml}
-                        </div>
-                    </div>`;
-            });
-        }
-        let c = document.getElementById('calendariosContainer');
-        c.innerHTML = '';
-        gerarAno(parseInt(document.getElementById('anoSelecionado').value), listaFiltrada, c);
-    }
-
-    function gerarAno(ano, ferias, container) {
-        for (let m = 0; m < 12; m++) {
-            let box = document.createElement('div');
-            box.className = 'calendar-box';
-            box.innerHTML = `<div class="calendar-header">${MESES[m]} ${ano}</div>`;
-            let g = document.createElement('div');
-            g.className = 'calendar-days';
-            DIAS_SEMANA.forEach(d => g.innerHTML += `<div class="day-name">${d}</div>`);
-            
-            let pds = new Date(ano, m, 1).getDay();
-            for (let i = 0; i < pds; i++) g.innerHTML += '<div class="day-cell"></div>';
-            
-            let qtd = new Date(ano, m + 1, 0).getDate();
-            for (let d = 1; d <= qtd; d++) {
-                let dt = new Date(ano, m, d).getTime(),
-                    ef = ferias.filter(f => dt >= f.inicioTimestamp && dt <= f.fimTimestamp),
-                    cc = 'day-cell';
-                if (ef.length > 0) cc += ef.length > 1 ? ' overlap' : ' has-vacation';
-                let th = ef.map(f => {
-                    const infoTooltip = `${f.nome} | ${f.setor || 'S/S'} | ${f.subestacao || 'S/SE'}`;
-                    return `<div class="vacation-tag" title="${infoTooltip}">${f.nome.split(' ')[0]}</div>`;
-                }).join('');
-                g.innerHTML += `<div class="${cc}"><div class="day-num">${d}</div>${th}</div>`;
+                if (f.editadoPor) {
+                    trilhaHtml += `${trilhaHtml ? ' • ' : ''}Editado por <strong>${escapeHtml(f.editadoPor)}</strong> em ${escapeHtml(f.editadoEm)}`;
+                }
             }
-            box.appendChild(g);
-            container.appendChild(box);
+
+            const temPermissao = podeModificarRegistro(f);
+            const botoesAcaoHtml = temPermissao
+                ? `<button class="btn-icon edit" onclick="editarFerias(${f.id})" title="Editar">✏️</button>
+                   <button class="btn-icon delete" onclick="removerFerias(${f.id})" title="Excluir">✖</button>`
+                : `<span class="btn-icon locked" title="Registro protegido: somente o autor deste cadastro ou um Administrador pode alterá-lo">🔒</span>`;
+
+            return `
+                <div class="list-item ${isEditing}">
+                    <div>
+                        <div class="colab-header">
+                            <strong>${escapeHtml(f.nome)}</strong>
+                            <span class="badge-meta badge-setor">${escapeHtml(setorTxt)}</span>
+                            <span class="badge-meta badge-se">${escapeHtml(seTxt)}</span>
+                        </div>
+                        <small>${escapeHtml(f.inicioStr)} até ${escapeHtml(f.fimStr)} <strong>(${escapeHtml(f.dias)} dias)</strong></small>
+                        ${trilhaHtml ? `<span class="audit-meta-line">🛡️ ${trilhaHtml}</span>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        ${botoesAcaoHtml}
+                    </div>
+                </div>`;
+        }).join('');
+        ld.innerHTML = itens;
+    }
+    let c = document.getElementById('calendariosContainer');
+    c.innerHTML = '';
+    gerarAno(parseInt(document.getElementById('anoSelecionado').value), listaFiltrada, c);
+}
+
+function gerarAno(ano, ferias, container) {
+    for (let m = 0; m < 12; m++) {
+        let box = document.createElement('div');
+        box.className = 'calendar-box';
+        box.innerHTML = `<div class="calendar-header">${MESES[m]} ${ano}</div>`;
+        let g = document.createElement('div');
+        g.className = 'calendar-days';
+        DIAS_SEMANA.forEach(d => g.innerHTML += `<div class="day-name">${d}</div>`);
+
+        let pds = new Date(ano, m, 1).getDay();
+        for (let i = 0; i < pds; i++) g.innerHTML += '<div class="day-cell"></div>';
+
+        let qtd = new Date(ano, m + 1, 0).getDate();
+        for (let d = 1; d <= qtd; d++) {
+            let dt = new Date(ano, m, d).getTime(),
+                ef = ferias.filter(f => dt >= f.inicioTimestamp && dt <= f.fimTimestamp),
+                cc = 'day-cell';
+            if (ef.length > 0) cc += ef.length > 1 ? ' overlap' : ' has-vacation';
+            let th = ef.map(f => {
+                const infoTooltip = `${f.nome} | ${f.setor || 'S/S'} | ${f.subestacao || 'S/SE'}`;
+                return `<div class="vacation-tag" title="${escapeHtml(infoTooltip)}">${escapeHtml(f.nome.split(' ')[0])}</div>`;
+            }).join('');
+            g.innerHTML += `<div class="${cc}"><div class="day-num">${d}</div>${th}</div>`;
+        }
+        box.appendChild(g);
+        container.appendChild(box);
+    }
+}
+
+// ==========================================
+// MODAL DE AUDITORIA (exportar e limpar: exclusivos do Master)
+// ==========================================
+
+function abrirModalAuditoria() {
+    if (!isAdmin()) {
+        return alert("Acesso restrito: apenas administradores podem visualizar a trilha de auditoria.");
+    }
+
+    const container = document.getElementById('listaLogsAuditoria');
+    const boxAcoesMaster = document.getElementById('acoesMasterAuditoria');
+    const logs = dbCache.logs || [];
+
+    boxAcoesMaster.style.display = isMaster() ? 'flex' : 'none';
+
+    if (!logs.length) {
+        container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:20px;">Nenhuma ação registrada até o momento.</p>';
+    } else {
+        container.innerHTML = logs.map(l => `
+            <div class="log-item">
+                <div class="log-top">
+                    <div>
+                        <span class="log-badge ${escapeHtml(l.acao)}">${escapeHtml(l.acao)}</span>
+                        <strong style="color:var(--alupar-blue); margin-left:6px;">👤 ${escapeHtml(l.operador)}</strong>
+                    </div>
+                    <small style="color:#64748b; font-weight:600;">🕒 ${escapeHtml(l.dataHora)}</small>
+                </div>
+                <div style="color:#334155; margin-top:2px;">${escapeHtml(l.detalhes)}</div>
+            </div>
+        `).join('');
+    }
+    document.getElementById('modalAuditoria').classList.add('open');
+}
+
+function fecharModalAuditoria() {
+    document.getElementById('modalAuditoria').classList.remove('open');
+}
+
+async function limparLogsAuditoria() {
+    if (!isMaster()) {
+        return alert("Acesso restrito: apenas o Administrador Master (alupar) pode limpar os logs da trilha de auditoria.");
+    }
+    if (!confirm("Deseja realmente apagar todo o histórico da trilha de auditoria?")) return;
+    dbCache.logs = [];
+    await saveDB();
+    abrirModalAuditoria();
+    renderFerias();
+}
+
+function exportarLogsCSV() {
+    if (!isMaster()) {
+        return alert("Acesso restrito: apenas o Administrador Master (alupar) pode exportar os logs da trilha de auditoria.");
+    }
+
+    const logs = dbCache.logs || [];
+    if (!logs.length) return alert("Não há logs para exportar.");
+
+    let csvContent = "\uFEFFData e Hora;Usuário Responsável;Ação;Detalhes da Operação\n";
+    logs.forEach(l => {
+        const op = `"${(l.operador || '').replace(/"/g, '""')}"`;
+        const acao = `"${(l.acao || '').replace(/"/g, '""')}"`;
+        const det = `"${(l.detalhes || '').replace(/"/g, '""')}"`;
+        csvContent += `"${l.dataHora}";${op};${acao};${det}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `auditoria_ferias_regional_nordeste.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// ==========================================
+// EXPORTAÇÃO (CSV) E IMPRESSÃO (PDF) - EXCLUSIVO ADMIN
+// ==========================================
+
+function verificarConflito(registroAtual, listaCompleta) {
+    const conflitantes = listaCompleta.filter(outro =>
+        outro.id !== registroAtual.id &&
+        registroAtual.inicioTimestamp <= outro.fimTimestamp &&
+        registroAtual.fimTimestamp >= outro.inicioTimestamp
+    );
+    if (conflitantes.length === 0) return "Sem conflito";
+    return "Conflito com: " + conflitantes.map(c => `${c.nome} (${c.setor || 'S/S'} - ${c.subestacao || 'S/SE'})`).join(", ");
+}
+
+function exportarCSV() {
+    if (!isAdmin()) {
+        return alert("Acesso restrito: apenas administradores podem exportar relatórios em Excel (CSV).");
+    }
+
+    const listaParaExportar = obterListaFiltrada();
+    if (!listaParaExportar || listaParaExportar.length === 0) {
+        return showErrorFerias("Não há registros de férias no filtro atual para exportar.");
+    }
+
+    const listaOrdenada = [...listaParaExportar].sort((a, b) => a.inicioTimestamp - b.inicioTimestamp);
+    let csvContent = "\uFEFFColaborador;Setor;Subestação;Dias;Data de Início;Data de Término;Ano de Início;Status de Conflito;Cadastrado Por;Data Cadastro;Última Edição Por;Data Edição\n";
+
+    listaOrdenada.forEach(f => {
+        const nomeLimpo = `"${(f.nome || '').replace(/"/g, '""')}"`;
+        const setorLimpo = `"${(f.setor || 'NÃO INFORMADO').replace(/"/g, '""')}"`;
+        const seLimpa = `"${(f.subestacao || 'NÃO INFORMADA').replace(/"/g, '""')}"`;
+        const anoInicio = new Date(f.inicioTimestamp).getFullYear();
+        const statusConflito = `"${verificarConflito(f, listaOrdenada)}"`;
+        const criadoPor = `"${(f.criadoPor || 'Registro anterior').replace(/"/g, '""')}"`;
+        const criadoEm = `"${(f.criadoEm || '-').replace(/"/g, '""')}"`;
+        const editadoPor = `"${(f.editadoPor || '-').replace(/"/g, '""')}"`;
+        const editadoEm = `"${(f.editadoEm || '-').replace(/"/g, '""')}"`;
+
+        csvContent += `${nomeLimpo};${setorLimpo};${seLimpa};${f.dias};${f.inicioStr};${f.fimStr};${anoInicio};${statusConflito};${criadoPor};${criadoEm};${editadoPor};${editadoEm}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const anoRef = document.getElementById('anoSelecionado').value;
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `ferias_regional_nordeste_${anoRef}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function imprimirRelatorio() {
+    if (!isAdmin()) {
+        return alert("Acesso restrito: apenas administradores podem imprimir ou exportar relatórios em PDF.");
+    }
+    window.print();
+}
+
+// ==========================================
+// GERENCIAMENTO DE USUÁRIOS E APROVAÇÕES
+// ==========================================
+
+function mostrarErroUsuario(msg) {
+    const el = document.getElementById('msgErroUsuario');
+    el.innerText = msg;
+    el.style.opacity = '1';
+    setTimeout(() => el.style.opacity = '0', 3500);
+}
+
+function abrirModalUsuarios() {
+    if (!isAdmin()) {
+        return alert("Acesso restrito: apenas administradores podem gerenciar usuários.");
+    }
+    document.getElementById('novoUserLogin').value = '';
+    document.getElementById('novoUserNome').value = '';
+    document.getElementById('novoUserSenha').value = '';
+    document.getElementById('novoUserAdminCheck').checked = false;
+
+    document.getElementById('boxMasterRoleCheck').style.display = isMaster() ? 'flex' : 'none';
+
+    renderListaUsuariosModal();
+    document.getElementById('modalUsuarios').classList.add('open');
+}
+
+function fecharModalUsuarios() {
+    document.getElementById('modalUsuarios').classList.remove('open');
+}
+
+async function aprovarSolicitacaoUsuario(idSolicitacao) {
+    if (!isAdmin()) return;
+    const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+    const req = solicitacoes.find(s => s.id === idSolicitacao);
+    if (!req) return;
+
+    const loginKey = (req.login || '').toLowerCase().trim();
+    const mapaAtual = obterMapaUsuarios();
+
+    if (mapaAtual[loginKey]) {
+        dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
+        await saveDB();
+        renderListaUsuariosModal();
+        renderFerias();
+        return mostrarErroUsuario(`O usuário "${loginKey}" já consta como ativo.`);
+    }
+
+    if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+        dbCache.usuarios = {};
+    }
+
+    // Senha inicial = login do usuário, gravada apenas como hash; troca obrigatória no 1º acesso
+    const salt = gerarSaltHex();
+    const k = await derivarHash(loginKey, salt, ITERACOES_PBKDF2);
+
+    dbCache.usuarios[loginKey] = {
+        hash: { s: salt, k: k, it: ITERACOES_PBKDF2 },
+        label: req.label || loginKey,
+        setor: req.setor || 'TELECOM',
+        subestacao: req.subestacao || 'SE JZT',
+        role: 'user',
+        senhaAlteradaPeloUsuario: false,
+        aprovadoPor: obterOperadorAtual(),
+        aprovadoEm: formatarDataHoraAtual()
+    };
+
+    dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
+    registrarLog('APROVAÇÃO', `Aprovou a criação do usuário "${loginKey}" (${req.label} | ${req.setor} | ${req.subestacao}).`);
+
+    await saveDB();
+    aplicarLotacaoUsuarioNoFormulario();
+    renderListaUsuariosModal();
+    renderFerias();
+}
+
+async function recusarSolicitacaoUsuario(idSolicitacao) {
+    if (!isAdmin()) return;
+    const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+    const req = solicitacoes.find(s => s.id === idSolicitacao);
+    if (!req) return;
+
+    if (!confirm(`Deseja recusar e excluir a solicitação de acesso de "${req.label}" (${req.login})?`)) return;
+
+    dbCache.solicitacoes = solicitacoes.filter(s => s.id !== idSolicitacao);
+    registrarLog('RECUSA', `Recusou e excluiu a solicitação de acesso de "${req.login}" (${req.label} | ${req.setor} | ${req.subestacao}).`);
+
+    await saveDB();
+    renderListaUsuariosModal();
+    renderFerias();
+}
+
+async function criarNovoUsuario() {
+    if (!isAdmin()) return;
+
+    const loginNovo = document.getElementById('novoUserLogin').value.trim().toLowerCase().replace(/\s+/g, '');
+    const nomeSobrenome = document.getElementById('novoUserNome').value.trim();
+    const setorNovo = document.getElementById('novoUserSetor').value;
+    const seNova = document.getElementById('novoUserSubestacao').value;
+    const senhaNova = document.getElementById('novoUserSenha').value.trim();
+    const definirComoAdmin = isMaster() && document.getElementById('novoUserAdminCheck').checked;
+
+    if (!loginNovo || !nomeSobrenome || !setorNovo || !seNova || !senhaNova) {
+        return mostrarErroUsuario("Preencha login, nome e sobrenome, equipe, subestação e senha inicial.");
+    }
+    if (loginNovo.length < 3) {
+        return mostrarErroUsuario("O usuário (login) deve ter pelo menos 3 caracteres.");
+    }
+    if (nomeSobrenome.length < 3) {
+        return mostrarErroUsuario("Informe o Nome e Sobrenome do colaborador.");
+    }
+    if (senhaNova.length < 8) {
+        return mostrarErroUsuario("A senha inicial deve ter pelo menos 8 caracteres.");
+    }
+
+    const mapaAtual = obterMapaUsuarios();
+    if (mapaAtual[loginNovo]) {
+        return mostrarErroUsuario(`O usuário "${loginNovo}" já existe no sistema.`);
+    }
+
+    if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+        dbCache.usuarios = {};
+    }
+
+    const roleAtribuida = definirComoAdmin ? 'admin' : 'user';
+    const salt = gerarSaltHex();
+    const k = await derivarHash(senhaNova, salt, ITERACOES_PBKDF2);
+
+    dbCache.usuarios[loginNovo] = {
+        hash: { s: salt, k: k, it: ITERACOES_PBKDF2 },
+        label: nomeSobrenome,
+        setor: setorNovo,
+        subestacao: seNova,
+        role: roleAtribuida,
+        senhaAlteradaPeloUsuario: false,
+        criadoPor: obterOperadorAtual(),
+        criadoEm: formatarDataHoraAtual()
+    };
+
+    if (Array.isArray(dbCache.solicitacoes)) {
+        dbCache.solicitacoes = dbCache.solicitacoes.filter(s => (s.login || '').toLowerCase() !== loginNovo);
+    }
+
+    registrarLog('USUÁRIO', `Criou o usuário "${loginNovo}" (${nomeSobrenome} | ${setorNovo} | ${seNova}) com perfil [${roleAtribuida.toUpperCase()}]`);
+
+    document.getElementById('novoUserLogin').value = '';
+    document.getElementById('novoUserNome').value = '';
+    document.getElementById('novoUserSenha').value = '';
+    document.getElementById('novoUserAdminCheck').checked = false;
+
+    await saveDB();
+    aplicarLotacaoUsuarioNoFormulario();
+    renderListaUsuariosModal();
+    renderFerias();
+}
+
+async function salvarDadosUsuario(loginAlvo) {
+    if (!isAdmin()) return;
+
+    const mapa = obterMapaUsuarios();
+    const alvo = mapa[loginAlvo];
+    if (!alvo) return;
+
+    const selectSetor = document.getElementById(`editSetor_${loginAlvo}`);
+    const selectSE = document.getElementById(`editSE_${loginAlvo}`);
+    const novoSetor = selectSetor ? selectSetor.value : (alvo.setor || 'TELECOM');
+    const novaSE = selectSE ? selectSE.value : (alvo.subestacao || 'SE JZT');
+
+    let novoNome = alvo.label;
+    let novaSenha = null;
+    let trocouSenha = false;
+
+    if (isMaster()) {
+        const inputNome = document.getElementById(`editNome_${loginAlvo}`);
+        const inputPass = document.getElementById(`editPass_${loginAlvo}`);
+        if (inputNome) {
+            novoNome = inputNome.value.trim();
+            if (!novoNome || novoNome.length < 3) {
+                return mostrarErroUsuario(`Informe o Nome e Sobrenome válido para "${loginAlvo}".`);
+            }
+        }
+        if (inputPass && inputPass.value.trim()) {
+            novaSenha = inputPass.value.trim();
+            if (novaSenha.length < 8) {
+                return mostrarErroUsuario(`A nova senha para "${loginAlvo}" deve ter pelo menos 8 caracteres.`);
+            }
+            trocouSenha = true;
         }
     }
+
+    if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+        dbCache.usuarios = {};
+    }
+
+    const entrada = {
+        ...(dbCache.usuarios[loginAlvo] || {}),
+        ...alvo,
+        label: novoNome,
+        setor: novoSetor,
+        subestacao: novaSE
+    };
+
+    if (trocouSenha) {
+        const salt = gerarSaltHex();
+        const k = await derivarHash(novaSenha, salt, ITERACOES_PBKDF2);
+        entrada.hash = { s: salt, k: k, it: ITERACOES_PBKDF2 };
+        entrada.ultimaTrocaSenhaEm = formatarDataHoraAtual();
+        // Senha definida pelo Master: o titular é obrigado a trocá-la no próximo login
+        entrada.senhaAlteradaPeloUsuario = (loginAlvo === 'alupar');
+    }
+    delete entrada.pass;
+
+    dbCache.usuarios[loginAlvo] = entrada;
+
+    registrarLog('USUÁRIO', `Atualizou cadastro de "${loginAlvo}" (${novoNome} | Lotação: ${novoSetor} - ${novaSE}${trocouSenha ? ' | Senha redefinida' : ''}).`);
+    await saveDB();
+    aplicarLotacaoUsuarioNoFormulario();
+    renderListaUsuariosModal();
+    alert(`Dados de "${novoNome}" (${loginAlvo}) atualizados com sucesso!`);
+}
+
+async function alternarPermissaoAdmin(loginAlvo) {
+    if (!isMaster()) {
+        return alert("Apenas o usuário Master (alupar) pode definir ou revogar permissões de Administrador.");
+    }
+    if (loginAlvo === 'alupar') return;
+
+    const mapa = obterMapaUsuarios();
+    const alvo = mapa[loginAlvo];
+    if (!alvo) return;
+
+    const novaRole = alvo.role === 'admin' ? 'user' : 'admin';
+    if (!dbCache.usuarios || typeof dbCache.usuarios !== 'object') {
+        dbCache.usuarios = {};
+    }
+
+    dbCache.usuarios[loginAlvo] = {
+        ...alvo,
+        role: novaRole
+    };
+
+    registrarLog('USUÁRIO', `Master alterou a permissão de "${loginAlvo}" (${alvo.label}) para [${novaRole.toUpperCase()}]`);
+    await saveDB();
+    renderListaUsuariosModal();
+    renderFerias();
+}
+
+async function excluirUsuarioSistema(loginAlvo) {
+    if (!isAdmin()) return;
+    if (loginAlvo === 'alupar') return alert("O usuário Master não pode ser removido.");
+    if (loginAlvo === obterLoginAtual()) return alert("Você não pode excluir o seu próprio usuário em uso.");
+
+    const mapa = obterMapaUsuarios();
+    const alvo = mapa[loginAlvo];
+    if (!alvo) return;
+
+    if (alvo.role === 'admin' && !isMaster()) {
+        return alert("Apenas o usuário Master (alupar) pode excluir um usuário Administrador.");
+    }
+
+    if (!confirm(`Deseja remover o usuário "${alvo.label}" (${loginAlvo})?`)) return;
+
+    if (dbCache.usuarios && dbCache.usuarios[loginAlvo]) {
+        delete dbCache.usuarios[loginAlvo];
+    }
+
+    registrarLog('USUÁRIO', `Removeu o usuário "${loginAlvo}" (${alvo.label})`);
+    await saveDB();
+    aplicarLotacaoUsuarioNoFormulario();
+    renderListaUsuariosModal();
+    renderFerias();
+}
+
+function renderListaUsuariosModal() {
+    const secaoPendentes = document.getElementById('secaoSolicitacoesPendentes');
+    const listaPendentesEl = document.getElementById('listaSolicitacoesPendentes');
+    const solicitacoes = Array.isArray(dbCache.solicitacoes) ? dbCache.solicitacoes : [];
+
+    document.getElementById('countPendentesModal').innerText = solicitacoes.length;
+
+    if (solicitacoes.length > 0) {
+        secaoPendentes.style.display = 'block';
+        listaPendentesEl.innerHTML = solicitacoes.map(s => `
+            <div class="pending-card">
+                <div>
+                    <strong style="color:var(--alupar-blue); font-size:1em;">${escapeHtml(s.label)}</strong>
+                    <small style="color:#475569; font-weight:700;">(${escapeHtml(s.login)})</small>
+                    <span class="badge-meta badge-setor" style="margin-left:4px;">${escapeHtml(s.setor || 'S/S')}</span>
+                    <span class="badge-meta badge-se">${escapeHtml(s.subestacao || 'S/SE')}</span>
+                    <div style="font-size:0.75em; color:#64748b; margin-top:3px;">🕒 Solicitado em: ${escapeHtml(s.solicitadoEm || '-')}</div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-approve" onclick="aprovarSolicitacaoUsuario(${s.id})">✅ Aprovar</button>
+                    <button class="btn-reject" onclick="recusarSolicitacaoUsuario(${s.id})">✖ Recusar</button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        secaoPendentes.style.display = 'none';
+        listaPendentesEl.innerHTML = '';
+    }
+
+    const container = document.getElementById('listaUsuariosSistema');
+    const mapa = obterMapaUsuarios();
+    const masterLogado = isMaster();
+
+    const chaves = Object.keys(mapa).sort((a, b) => {
+        if (a === 'alupar') return -1;
+        if (b === 'alupar') return 1;
+        return a.localeCompare(b);
+    });
+
+    container.innerHTML = chaves.map(loginKey => {
+        const u = mapa[loginKey];
+        const roleClass = u.role === 'master' ? 'master' : (u.role === 'admin' ? 'admin' : 'user');
+        const roleLabel = u.role === 'master' ? 'MASTER' : (u.role === 'admin' ? 'ADMIN' : 'USUÁRIO');
+        const nomeFormatado = u.label || loginKey;
+        const nomeSeguroHtml = escapeHtml(nomeFormatado);
+        const loginSeguroJs = escapeHtml(loginKey).replace(/'/g, '&#39;');
+        const setorAtual = u.setor || 'TELECOM';
+        const seAtual = u.subestacao || 'SE JZT';
+
+        const trocouSenha = u.senhaAlteradaPeloUsuario && u.hash;
+        const pillSenhaStatus = trocouSenha
+            ? '<span class="status-pass-pill ok">✓ Senha Pessoal Definida</span>'
+            : '<span class="status-pass-pill pending">⏳ Troca Pendente no 1º Acesso</span>';
+
+        const opcoesSetorHtml = LISTA_SETORES.map(st =>
+            `<option value="${escapeHtml(st)}" ${st === setorAtual ? 'selected' : ''}>${escapeHtml(st)}</option>`
+        ).join('');
+
+        const opcoesSEHtml = LISTA_SES.map(se =>
+            `<option value="${escapeHtml(se)}" ${se === seAtual ? 'selected' : ''}>${escapeHtml(se)}</option>`
+        ).join('');
+
+        let botoesHtml = '';
+        if (loginKey !== 'alupar') {
+            if (masterLogado) {
+                const txtToggle = u.role === 'admin' ? 'Rebaixar p/ Usuário' : 'Tornar Admin';
+                botoesHtml += `<button class="btn-role-toggle" onclick="alternarPermissaoAdmin('${loginSeguroJs}')">${txtToggle}</button>`;
+            }
+            if (dbCache.usuarios && dbCache.usuarios[loginKey] && (masterLogado || u.role !== 'admin')) {
+                botoesHtml += `<button class="btn-icon delete" style="width:32px;height:32px;font-size:1em;" onclick="excluirUsuarioSistema('${loginSeguroJs}')" title="Excluir Usuário">✖</button>`;
+            }
+        }
+
+        // Com hash PBKDF2 nenhuma senha é exibida; o Master pode apenas definir uma nova
+        const infoSenhaMaster = masterLogado
+            ? `<span class="pass-current-view">🔑 Senha protegida por hash PBKDF2 (nunca exibida)</span>`
+            : `<span class="pass-current-view">📍 Lotação vinculada ao formulário:</span>`;
+
+        const camposMasterNomeSenha = masterLogado ? `
+            <input type="text" class="inp-nome-master" id="editNome_${loginKey}" value="${nomeSeguroHtml}" placeholder="Nome e Sobrenome" title="Nome e Sobrenome">
+            <input type="text" class="inp-senha-master" id="editPass_${loginKey}" value="" placeholder="Nova senha (opcional)" title="Deixe vazio para manter a senha atual" autocomplete="new-password">
+        ` : '';
+
+        return `
+            <div class="user-row">
+                <div class="user-row-top">
+                    <div>
+                        <strong style="color:var(--alupar-blue); font-size:1.02em;">${nomeSeguroHtml}</strong>
+                        <small style="color:#64748b; font-weight:600; margin-left:4px;">(${escapeHtml(loginKey)})</small>
+                        <span class="role-pill ${roleClass}" style="margin-left:6px;">${roleLabel}</span>
+                        <span class="badge-meta badge-setor" style="margin-left:4px;">${escapeHtml(setorAtual)}</span>
+                        <span class="badge-meta badge-se">${escapeHtml(seAtual)}</span>
+                        ${pillSenhaStatus}
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        ${botoesHtml}
+                    </div>
+                </div>
+                <div class="user-master-pass-bar">
+                    ${infoSenhaMaster}
+                    <div class="master-pass-edit-group">
+                        ${camposMasterNomeSenha}
+                        <select class="inp-lot-master" id="editSetor_${loginKey}" title="Equipe / Setor">${opcoesSetorHtml}</select>
+                        <select class="inp-lot-master" id="editSE_${loginKey}" title="Subestação">${opcoesSEHtml}</select>
+                        <button class="btn-save-pass-master" onclick="salvarDadosUsuario('${loginSeguroJs}')">💾 Salvar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ==========================================
+// INICIALIZAÇÃO
+// ==========================================
+
+function popularAnos() {
+    const selectAno = document.getElementById('anoSelecionado');
+    if (!selectAno) return;
+    const anoAtual = new Date().getFullYear();
+    const anos = [];
+    for (let a = anoAtual - 1; a <= anoAtual + 2; a++) anos.push(a);
+    selectAno.innerHTML = anos.map(a => `<option value="${a}" ${a === anoAtual ? 'selected' : ''}>${a}</option>`).join('');
+}
+
+function dataHojeISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+(function init() {
+    // Frame-buster: impede que o sistema seja embutido em outros sites (clickjacking)
+    if (window.top !== window.self) {
+        try { window.top.location = window.self.location; }
+        catch (e) { document.documentElement.innerHTML = ''; }
+    }
+
+    popularAnos();
+    const fInicio = document.getElementById('fInicio');
+    if (fInicio && !fInicio.value) fInicio.value = dataHojeISO();
+
+    verificarConfiguracao();
+    navigate();
+})();
+
+window.addEventListener('hashchange', navigate);
+
 </script>
 </body>
 </html>
